@@ -191,9 +191,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo Section - Hide when keyboard is visible on mobile */}
         <div className={`text-center mb-6 transition-all duration-200 ${keyboardVisible ? 'hidden sm:block' : ''}`}>
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 shadow-lg shadow-blue-200 mb-3">
-            <Milk className="w-8 h-8 text-white" />
-          </div>
+          <img src="/logo.png" alt="My Dairy" className="w-16 h-16 rounded-full object-cover mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-slate-900">My Dairy</h1>
           <p className="text-slate-500 mt-1 text-sm">Smart Milk Collection System</p>
         </div>

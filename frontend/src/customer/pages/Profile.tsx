@@ -14,7 +14,7 @@ export default function Profile() {
   if (!profile) return <div className="p-8 text-center">{t('loading')}</div>;
 
   return (
-    <div className="p-4 max-w-lg mx-auto">
+    <div className="pb-20">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('profile.title')}</h2>
       
       <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center mb-6 relative overflow-hidden">
@@ -104,7 +104,7 @@ export function News() {
   }, []);
 
   return (
-    <div className="p-4 pb-20 max-w-lg mx-auto">
+    <div className="pb-20">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('news.title')}</h2>
       {news.length === 0 ? (
         <div className="text-center text-slate-400 mt-10">{t('no.data')}</div>
@@ -129,7 +129,7 @@ export function News() {
 export function About() {
   const { t } = useI18n();
   return (
-    <div className="p-4 max-w-lg mx-auto">
+    <div className="pb-20">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('about.title')}</h2>
       <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
         <h3 className="font-bold text-lg text-blue-600">My Dairy Cooperative</h3>
@@ -189,7 +189,7 @@ export function LatestPayments() {
 
   if (loading) {
     return (
-      <div className="p-4 pb-20 max-w-lg mx-auto">
+      <div className="pb-20">
         <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('payments.title')}</h2>
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
           <div className="w-10 h-10 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin mb-4" />
@@ -200,7 +200,7 @@ export function LatestPayments() {
   }
 
   return (
-    <div className="p-4 pb-20 max-w-lg mx-auto">
+    <div className="pb-20">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('payments.title')}</h2>
       
       {/* Summary Card */}

@@ -12,7 +12,6 @@ export default function CustomerDashboard() {
   const { t } = useI18n();
   const { user } = useAuth();
   const [summary, setSummary] = useState<any>(null);
-  const [chartPeriod, setChartPeriod] = useState<'weekly' | 'monthly'>('weekly');
   const [today, setToday] = useState<any>(null);
   const [recentPayments, setRecentPayments] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -94,7 +93,7 @@ export default function CustomerDashboard() {
   );
 
   return (
-    <div className="space-y-6 max-w-lg mx-auto pb-20">
+    <div className="space-y-4 pb-20">
       {/* Welcome & Date */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t('dashboard.title')}</h2>
@@ -195,35 +194,11 @@ export default function CustomerDashboard() {
       </div>
 
       {/* Chart - Collection Trends */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-        {/* Header with toggle */}
-        <div className="flex items-start justify-between mb-1">
-          <div>
-            <h3 className="font-bold text-slate-900 text-base">{t('collection.trends')}</h3>
-            <p className="text-slate-400 text-xs mt-0.5">{t('milk.quantity.time')}</p>
-          </div>
-          <div className="flex bg-slate-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setChartPeriod('weekly')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                chartPeriod === 'weekly'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {t('weekly')}
-            </button>
-            <button
-              onClick={() => setChartPeriod('monthly')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                chartPeriod === 'monthly'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {t('monthly')}
-            </button>
-          </div>
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        {/* Header */}
+        <div className="mb-2">
+          <h3 className="font-bold text-slate-900 text-base">{t('collection.trends')}</h3>
+          <p className="text-slate-400 text-xs mt-0.5">{t('milk.quantity.time')}</p>
         </div>
         
         {/* Chart */}

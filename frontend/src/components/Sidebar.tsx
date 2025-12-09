@@ -58,8 +58,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, toggleCollapse }
         <div className={`h-24 flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-between px-8'} transition-all duration-300`}>
           <div className="flex items-center gap-4 group cursor-pointer overflow-hidden">
             <div className="relative shrink-0">
-              <div className="absolute inset-0 bg-indigo-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
-              <img src="/logo.png" alt="My Dairy" className="relative w-11 h-11 rounded-xl shadow-sm object-cover" />
+              <img src="/logo.png" alt="My Dairy" className="w-11 h-11 rounded-full object-cover" />
             </div>
             <div className={`min-w-0 transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
               <h1 className="font-heading font-bold text-slate-900 text-xl leading-tight tracking-tight whitespace-nowrap">My Dairy</h1>

@@ -5,7 +5,7 @@ export default function Settings() {
   const { t, language, changeLanguage } = useI18n();
 
   return (
-    <div className="p-4 pb-20 max-w-lg mx-auto">
+    <div className="pb-20">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('settings.title')}</h2>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">

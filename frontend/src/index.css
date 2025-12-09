@@ -99,3 +99,27 @@
 .spinner {
   @apply w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin;
 }
+
+/* Remove focus outlines on mobile tap */
+@media (max-width: 768px) {
+  button, a, input, select, textarea, [tabindex] {
+    -webkit-tap-highlight-color: transparent;
+    outline: none !important;
+  }
+  
+  button:focus, a:focus, input:focus, select:focus, textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Remove orange border on focus for all elements */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+

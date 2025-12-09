@@ -139,7 +139,7 @@ function CustomerLayoutContent() {
       </aside>
 
       {/* Main Content */}
-      <main className="pt-20 min-h-screen px-4 pb-10">
+      <main className="pt-20 min-h-screen px-2 pb-10">
         <Outlet />
       </main>
     </div>

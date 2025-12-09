@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { paymentApi, customerApi, advanceApi } from '../lib/api';
+import { Select } from '../components/ui/Select';
 import { 
   Plus, 
   Edit, 
@@ -10,8 +12,6 @@ import {
   Calendar,
   MoreVertical,
   Wallet,
-  Search,
-  ChevronDown,
   Banknote,
   ArrowUpCircle,
   User
@@ -69,9 +69,15 @@ export default function PaymentsPage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [useAdvance, setUseAdvance] = useState(false);
   const [customerAdvanceBalance, setCustomerAdvanceBalance] = useState(0);
   const [loadingAdvanceBalance, setLoadingAdvanceBalance] = useState(false);
+
+  // Advances menu position state
+  const [advanceMenuPosition, setAdvanceMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const advanceMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Advances state
   const [advances, setAdvances] = useState<Advance[]>([]);
@@ -365,19 +371,21 @@ export default function PaymentsPage() {
                   />
                 </div>
               )}
-              <div className="relative w-full sm:flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select
+              <div className="w-full sm:flex-1 min-w-[200px]">
+                <Select
                   value={selectedCustomer}
-                  onChange={(e) => setSelectedCustomer(e.target.value)}
-                  className="w-full pl-10 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 appearance-none"
-                >
-                  <option value="">All Customers</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name} (#{c.amcu_customer_id})</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  onChange={setSelectedCustomer}
+                  searchable
+                  placeholder="All Customers"
+                  options={[
+                    { value: '', label: 'All Customers' },
+                    ...customers.map((c) => ({
+                      value: c.id.toString(),
+                      label: c.name,
+                      subLabel: `#${c.amcu_customer_id}`
+                    }))
+                  ]}
+                />
               </div>
             </div>
           </div>
@@ -475,16 +483,34 @@ export default function PaymentsPage() {
                         <td className="px-6 py-4 text-right">
                           <div className="relative inline-block">
                             <button 
-                              onClick={() => setActiveMenu(activeMenu === payment.id ? null : payment.id)}
+                              ref={activeMenu === payment.id ? menuButtonRef : null}
+                              onClick={(e) => {
+                                if (activeMenu === payment.id) {
+                                  setActiveMenu(null);
+                                  setMenuPosition(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const spaceBelow = window.innerHeight - rect.bottom;
+                                  const menuHeight = 90;
+                                  setMenuPosition({
+                                    top: spaceBelow > menuHeight ? rect.bottom + 4 : rect.top - menuHeight - 4,
+                                    left: rect.right - 144
+                                  });
+                                  setActiveMenu(payment.id);
+                                }
+                              }}
                               className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </button>
                             
-                            {activeMenu === payment.id && (
+                            {activeMenu === payment.id && menuPosition && createPortal(
                               <>
-                                <div className="fixed inset-0 z-20" onClick={() => setActiveMenu(null)}></div>
-                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-30 py-1">
+                                <div className="fixed inset-0 z-[100]" onClick={() => { setActiveMenu(null); setMenuPosition(null); }}></div>
+                                <div 
+                                  style={{ top: menuPosition.top, left: menuPosition.left }}
+                                  className="fixed w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-[101] py-1"
+                                >
                                   <button 
                                     onClick={() => handleEdit(payment)}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -498,7 +524,8 @@ export default function PaymentsPage() {
                                     <Trash2 className="w-4 h-4" /> Delete
                                   </button>
                                 </div>
-                              </>
+                              </>,
+                              document.body
                             )}
                           </div>
                         </td>
@@ -593,16 +620,34 @@ export default function PaymentsPage() {
                         <td className="px-6 py-4 text-right">
                           <div className="relative inline-block">
                             <button 
-                              onClick={() => setAdvanceMenu(advanceMenu === advance.id ? null : advance.id)}
+                              ref={advanceMenu === advance.id ? advanceMenuButtonRef : null}
+                              onClick={(e) => {
+                                if (advanceMenu === advance.id) {
+                                  setAdvanceMenu(null);
+                                  setAdvanceMenuPosition(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  const spaceBelow = window.innerHeight - rect.bottom;
+                                  const menuHeight = 90;
+                                  setAdvanceMenuPosition({
+                                    top: spaceBelow > menuHeight ? rect.bottom + 4 : rect.top - menuHeight - 4,
+                                    left: rect.right - 144
+                                  });
+                                  setAdvanceMenu(advance.id);
+                                }
+                              }}
                               className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                             >
                               <MoreVertical className="w-4 h-4" />
                             </button>
                             
-                            {advanceMenu === advance.id && (
+                            {advanceMenu === advance.id && advanceMenuPosition && createPortal(
                               <>
-                                <div className="fixed inset-0 z-20" onClick={() => setAdvanceMenu(null)}></div>
-                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-30 py-1">
+                                <div className="fixed inset-0 z-[100]" onClick={() => { setAdvanceMenu(null); setAdvanceMenuPosition(null); }}></div>
+                                <div 
+                                  style={{ top: advanceMenuPosition.top, left: advanceMenuPosition.left }}
+                                  className="fixed w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-[101] py-1"
+                                >
                                   <button 
                                     onClick={() => handleEditAdvance(advance)}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -616,7 +661,8 @@ export default function PaymentsPage() {
                                     <Trash2 className="w-4 h-4" /> Delete
                                   </button>
                                 </div>
-                              </>
+                              </>,
+                              document.body
                             )}
                           </div>
                         </td>
@@ -650,21 +696,21 @@ export default function PaymentsPage() {
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
-                    <select
+                    <Select
                       value={formData.customerId}
-                      onChange={(e) => {
-                        setFormData({ ...formData, customerId: e.target.value });
-                        fetchCustomerAdvanceBalance(e.target.value);
+                      onChange={(value) => {
+                        setFormData({ ...formData, customerId: value });
+                        fetchCustomerAdvanceBalance(value);
                         setUseAdvance(false);
                       }}
-                      className="w-full rounded-lg border-gray-300 bg-gray-50 py-2.5 px-3 text-gray-900 text-sm"
-                      required
-                    >
-                      <option value="">Select customer</option>
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} (#{c.amcu_customer_id})</option>
-                      ))}
-                    </select>
+                      searchable
+                      placeholder="Select customer"
+                      options={customers.map((c) => ({
+                        value: c.id.toString(),
+                        label: c.name,
+                        subLabel: `#${c.amcu_customer_id}`
+                      }))}
+                    />
                   </div>
 
                   {/* Advance Balance Display */}
@@ -796,17 +842,17 @@ export default function PaymentsPage() {
                 <form onSubmit={handleAdvanceSubmit} className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
-                    <select
+                    <Select
                       value={advanceFormData.customerId}
-                      onChange={(e) => setAdvanceFormData({ ...advanceFormData, customerId: e.target.value })}
-                      className="w-full rounded-lg border-gray-300 bg-gray-50 py-2.5 px-3 text-gray-900 text-sm"
-                      required
-                    >
-                      <option value="">Select customer</option>
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} (#{c.amcu_customer_id})</option>
-                      ))}
-                    </select>
+                      onChange={(value) => setAdvanceFormData({ ...advanceFormData, customerId: value })}
+                      searchable
+                      placeholder="Select customer"
+                      options={customers.map((c) => ({
+                        value: c.id.toString(),
+                        label: c.name,
+                        subLabel: `#${c.amcu_customer_id}`
+                      }))}
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

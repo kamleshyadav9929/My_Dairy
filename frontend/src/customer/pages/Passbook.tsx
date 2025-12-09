@@ -124,7 +124,7 @@ export default function Passbook() {
   };
 
   return (
-    <div className="p-4 pb-20 max-w-lg mx-auto">
+    <div className="pb-20">
       <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('passbook.title')}</h2>
 
       {/* Hero Card - Balance */}
