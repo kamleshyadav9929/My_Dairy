@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838892173642",
+    "project_id": "my-dairy-cbd6c",
+    "storage_bucket": "my-dairy-cbd6c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838892173642:android:bb243721dd88cc6a1829b3",
+        "android_client_info": {
+          "package_name": "com.mydairy.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDgA3lRU0ixBWBBRN4_TFeSrZQlONSIYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

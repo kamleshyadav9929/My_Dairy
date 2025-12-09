@@ -6,6 +6,7 @@ import { generateDashboardShareMessage, shareNative } from '../utils/shareUtils'
 import { Milk, TrendingUp, Calendar, ChevronRight, Droplet, IndianRupee, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 export default function CustomerDashboard() {
   const { t } = useI18n();
@@ -17,6 +18,15 @@ export default function CustomerDashboard() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [lastSynced, setLastSynced] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize push notifications (auto-registers FCM token)
+  usePushNotifications({
+    onNotificationReceived: (notification) => {
+      console.log('Notification received:', notification);
+      // Refresh data when notification is received
+      loadData();
+    }
+  });
 
   useEffect(() => {
     loadData();

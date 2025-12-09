@@ -1,5 +1,6 @@
 const { supabase, getLocalDate, getFirstDayOfMonth } = require('../config/supabase');
 const { createNotification } = require('./customerPortalController');
+const notificationService = require('../services/notificationService');
 
 /**
  * Get all payments with filters
@@ -174,7 +175,7 @@ async function createPayment(req, res) {
             if (error) throw error;
             payment = newPayment;
 
-            // Create notification for customer
+            // Create in-app notification for customer
             await createNotification({
                 customerId,
                 type: 'payment',
@@ -184,6 +185,10 @@ async function createPayment(req, res) {
                 entryDate: date,
                 referenceId: newPayment.id
             });
+
+            // Send push notification (async, don't await)
+            notificationService.sendPaymentNotification(newPayment, customer.name)
+                .catch(err => console.log('Push notification error:', err.message));
         }
 
         res.status(201).json({

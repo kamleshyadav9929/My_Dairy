@@ -2,6 +2,7 @@ const { supabase, getLocalDate } = require('../config/supabase');
 const rateService = require('../services/rateService');
 const pdfService = require('../services/pdfService');
 const { createNotification } = require('./customerPortalController');
+const notificationService = require('../services/notificationService');
 
 /**
  * Get all milk entries with filters
@@ -262,7 +263,7 @@ async function createEntry(req, res) {
 
         if (insertError) throw insertError;
 
-        // Create notification for customer
+        // Create in-app notification for customer
         await createNotification({
             customerId,
             type: 'entry',
@@ -272,6 +273,10 @@ async function createEntry(req, res) {
             entryDate: date,
             referenceId: entry.id
         });
+
+        // Send push notification (async, don't await)
+        notificationService.sendMilkEntryNotification(entry, customer.name)
+            .catch(err => console.log('Push notification error:', err.message));
 
         res.status(201).json({ 
             entry: {

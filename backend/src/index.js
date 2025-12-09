@@ -12,9 +12,11 @@ const advanceRoutes = require('./routes/advances');
 const settingsRoutes = require('./routes/settings');
 const amcuRoutes = require('./routes/amcu');
 const customerPortalRoutes = require('./routes/customerRoutes');
+const notificationRoutes = require('./routes/notifications');
 
 // Import services
 const amcuService = require('./services/amcuService');
+const notificationService = require('./services/notificationService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +48,7 @@ app.use('/api/advances', advanceRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/amcu', amcuRoutes);
 app.use('/api/customer', customerPortalRoutes); // Customer Portal
+app.use('/api/notifications', notificationRoutes); // Push Notifications
 
 // SSE endpoint for real-time AMCU updates
 const clients = new Set();
