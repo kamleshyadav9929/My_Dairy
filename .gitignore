@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+frontend/dist/
+frontend/android/app/build/
+*.apk
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database files (local SQLite - not used with Supabase)
+*.db
+*.sqlite
+
+# Capacitor
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/src/main/assets/capacitor.config.json
