@@ -6,8 +6,9 @@ const notificationService = require('../services/notificationService');
 // Middleware to verify customer token
 const verifyCustomerToken = require('../middleware/customerAuth');
 
-// Middleware to verify admin token
-const verifyAdminToken = require('../middleware/auth');
+// Middleware to verify admin token (destructure from auth.js)
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+
 
 /**
  * Register FCM token for push notifications
@@ -34,7 +35,7 @@ router.post('/register', verifyCustomerToken, async (req, res) => {
  * Send notification to specific customer (Admin only)
  * POST /api/notifications/send
  */
-router.post('/send', verifyAdminToken, async (req, res) => {
+router.post('/send', authenticateToken, async (req, res) => {
     try {
         const { customerId, title, body, data } = req.body;
 
@@ -54,7 +55,7 @@ router.post('/send', verifyAdminToken, async (req, res) => {
  * Send broadcast notification to all customers (Admin only)
  * POST /api/notifications/broadcast
  */
-router.post('/broadcast', verifyAdminToken, async (req, res) => {
+router.post('/broadcast', authenticateToken, async (req, res) => {
     try {
         const { title, body, data } = req.body;
 
@@ -74,7 +75,7 @@ router.post('/broadcast', verifyAdminToken, async (req, res) => {
  * Test notification (Admin only - for debugging)
  * POST /api/notifications/test
  */
-router.post('/test', verifyAdminToken, async (req, res) => {
+router.post('/test', authenticateToken, async (req, res) => {
     try {
         const { customerId } = req.body;
 
