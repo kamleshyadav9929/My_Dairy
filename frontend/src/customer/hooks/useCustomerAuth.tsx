@@ -40,13 +40,13 @@ export const CustomerAuthProvider = ({ children }: { children: React.ReactNode }
   const login = async (credentials: any) => {
     try {
       const { data } = await customerPortalApi.login(credentials);
-      const { token, customer } = data;
+      const { token, user } = data;
       
       localStorage.setItem('customer_token', token);
-      localStorage.setItem('customer_user', JSON.stringify(customer));
+      localStorage.setItem('customer_user', JSON.stringify(user));
       
       setToken(token);
-      setUser(customer);
+      setUser(user);
       return data;
     } catch (error) {
       throw error;
