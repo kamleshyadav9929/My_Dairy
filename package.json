@@ -2,7 +2,10 @@
   "name": "my-dairy",
   "version": "1.0.0",
   "description": "Dairy Management System",
+  "main": "backend/src/index.js",
   "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm install",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
