@@ -18,17 +18,19 @@ export const usePushNotifications = (options?: UsePushNotificationsOptions) => {
   // Register FCM token with backend
   const registerTokenWithBackend = useCallback(async (token: string) => {
     try {
-      const customerToken = localStorage.getItem('customer_token');
-      if (!customerToken) {
-        console.log('No customer token, skipping FCM registration');
+      // Get token from localStorage or sessionStorage (matching AuthContext keys)
+      const authToken = localStorage.getItem('dairy_app_token') || sessionStorage.getItem('dairy_app_token');
+      if (!authToken) {
+        console.log('No auth token found, skipping FCM registration');
         return;
       }
 
+      console.log('Registering FCM token with backend...');
       const response = await fetch(`${API_BASE}/notifications/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${customerToken}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           token,
@@ -101,16 +103,16 @@ export const usePushNotifications = (options?: UsePushNotificationsOptions) => {
   // Unregister token when logging out
   const unregisterToken = useCallback(async () => {
     const fcmToken = localStorage.getItem('fcm_token');
-    const customerToken = localStorage.getItem('customer_token');
+    const authToken = localStorage.getItem('dairy_app_token') || sessionStorage.getItem('dairy_app_token');
     
-    if (!fcmToken || !customerToken) return;
+    if (!fcmToken || !authToken) return;
 
     try {
       await fetch(`${API_BASE}/notifications/unregister`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${customerToken}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({ token: fcmToken })
       });
