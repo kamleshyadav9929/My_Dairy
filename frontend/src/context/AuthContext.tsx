@@ -63,8 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? await authApi.adminLogin(username, password)
       : await authApi.customerLogin(username, password);
     
+    console.log('Login API Response:', response.data);
+    
     // Backend returns { token, user } for BOTH admin and customer
     const { token: newToken, user: userData } = response.data;
+    
+    // Defensive check - if userData is undefined, throw error
+    if (!userData || !userData.role) {
+      console.error('Invalid login response - userData:', userData);
+      throw new Error('Invalid login response from server');
+    }
     
     let userInfo: User;
     
