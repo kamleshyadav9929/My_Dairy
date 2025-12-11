@@ -98,7 +98,7 @@ const ActionMenu = ({
           <Edit className="w-4 h-4" /> Edit Details
         </button>
         <button 
-          onClick={(e) => { e.stopPropagation(); onDelete(); onClose(); }}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
         >
           <Trash2 className="w-4 h-4" /> Delete Customer
@@ -187,13 +187,17 @@ export default function CustomersPage() {
 
   const handleDelete = async (id: number) => {
     setMenuState(null);
-    if (!confirm('Are you sure you want to delete this customer?')) return;
+    if (!confirm('Are you sure you want to delete this customer? This will also delete all their milk entries, payments, and advances.')) {
+      return;
+    }
     
     try {
       await customerApi.delete(id);
       loadCustomers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete customer:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+      alert(`Failed to delete customer: ${errorMessage}`);
     }
   };
 
@@ -418,15 +422,20 @@ export default function CustomersPage() {
             </div>
             
             {/* Action Menu (Shared) */}
-            {menuState && (
+            {menuState && (() => {
+              const currentId = menuState.id;
+              const currentCustomer = customers.find(c => c.id === currentId);
+              if (!currentCustomer) return null;
+              return (
                <ActionMenu 
                   anchorEl={menuState.anchor}
-                  onEdit={() => customers.find(c => c.id === menuState.id) && handleEdit(customers.find(c => c.id === menuState.id)!)}
-                  onDelete={() => customers.find(c => c.id === menuState.id) && handleDelete(menuState.id)}
-                  onWhatsApp={() => customers.find(c => c.id === menuState.id) && handleWhatsApp(customers.find(c => c.id === menuState.id)!)}
+                  onEdit={() => handleEdit(currentCustomer)}
+                  onDelete={() => handleDelete(currentId)}
+                  onWhatsApp={() => handleWhatsApp(currentCustomer)}
                   onClose={() => setMenuState(null)}
                />
-            )}
+              );
+            })()}
           </>
         )}
       </div>

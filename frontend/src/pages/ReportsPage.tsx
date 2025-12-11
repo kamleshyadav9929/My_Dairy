@@ -290,7 +290,6 @@ export default function ReportsPage() {
         from: passbookFrom, 
         to: passbookTo 
       });
-      console.log('Passbook data:', res.data);
       setPassbookData(res.data);
       setShowPassbookModal(true);
     } catch (error) {

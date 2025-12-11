@@ -60,16 +60,8 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    console.log('=== LOGIN ATTEMPT ===');
-    console.log('isAdmin:', isAdmin);
-    console.log('username:', username);
-
     try {
       await login(username, password, isAdmin, rememberMe);
-      
-      console.log('Login successful!');
-      console.log('isAdmin state:', isAdmin);
-      console.log('Navigating to:', isAdmin ? '/' : '/customer/dashboard');
       
       if (isAdmin) {
         navigate('/', { replace: true });

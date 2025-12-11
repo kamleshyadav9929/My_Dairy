@@ -109,7 +109,6 @@ async function getCustomerEntries(req, res) {
 async function getTodayStats(req, res) {
     try {
         const today = req.query.date || getLocalDate();
-        console.log('Fetching stats for date:', today);
 
         // Get entries for today with customer info
         const { data: entries, error: entriesError } = await supabase
@@ -139,8 +138,6 @@ async function getTodayStats(req, res) {
             morningLitres: allEntries.filter(e => e.shift === 'M').reduce((sum, e) => sum + (e.quantity_litre || 0), 0),
             eveningLitres: allEntries.filter(e => e.shift === 'E').reduce((sum, e) => sum + (e.quantity_litre || 0), 0)
         };
-
-        console.log(`Stats for ${today}:`, stats);
 
         // Transform entries
         const transformedEntries = entries.map(e => ({

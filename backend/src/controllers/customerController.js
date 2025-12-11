@@ -175,8 +175,6 @@ async function getCustomerPassbook(req, res) {
         const { id } = req.params;
         const { from, to } = req.query;
 
-        console.log('Passbook request:', { id, from, to });
-
         // Get entries
         // Including fat and snf
         let entriesQuery = supabase
@@ -190,8 +188,6 @@ async function getCustomerPassbook(req, res) {
         const { data: entries, error: entriesError } = await entriesQuery.order('date');
 
         if (entriesError) throw entriesError;
-        
-        console.log('Found entries:', entries ? entries.length : 0);
 
         // Get payments
         let paymentsQuery = supabase
@@ -369,20 +365,61 @@ async function updateCustomer(req, res) {
 }
 
 /**
- * Delete customer (soft delete)
+ * Delete customer (hard delete with cleanup of related records)
  */
 async function deleteCustomer(req, res) {
     try {
         const { id } = req.params;
 
+        // First, delete related password_reset_requests to avoid foreign key constraint
+        const { error: resetError } = await supabase
+            .from('password_reset_requests')
+            .delete()
+            .eq('customer_id', id);
+
+        if (resetError) {
+            console.warn('Warning: Could not delete password_reset_requests:', resetError.message);
+        }
+
+        // Delete related milk_entries
+        const { error: entriesError } = await supabase
+            .from('milk_entries')
+            .delete()
+            .eq('customer_id', id);
+
+        if (entriesError) {
+            console.warn('Warning: Could not delete milk_entries:', entriesError.message);
+        }
+
+        // Delete related payments
+        const { error: paymentsError } = await supabase
+            .from('payments')
+            .delete()
+            .eq('customer_id', id);
+
+        if (paymentsError) {
+            console.warn('Warning: Could not delete payments:', paymentsError.message);
+        }
+
+        // Delete related advances
+        const { error: advancesError } = await supabase
+            .from('advances')
+            .delete()
+            .eq('customer_id', id);
+
+        if (advancesError) {
+            console.warn('Warning: Could not delete advances:', advancesError.message);
+        }
+
+        // Now delete the customer
         const { error } = await supabase
             .from('customers')
-            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .delete()
             .eq('id', id);
 
         if (error) throw error;
 
-        res.json({ message: 'Customer deactivated' });
+        res.json({ message: 'Customer deleted successfully' });
     } catch (error) {
         console.error('Delete customer error:', error);
         res.status(500).json({ error: 'Failed to delete customer' });

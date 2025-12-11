@@ -20,8 +20,7 @@ export default function CustomerDashboard() {
 
   // Initialize push notifications (auto-registers FCM token)
   usePushNotifications({
-    onNotificationReceived: (notification) => {
-      console.log('Notification received:', notification);
+    onNotificationReceived: () => {
       // Refresh data when notification is received
       loadData();
     }
