@@ -16,6 +16,11 @@ const translations = {
     'about.title': 'About Us',
     'logout': 'Logout',
     
+    // Greetings
+    'greeting.morning': 'Good Morning',
+    'greeting.afternoon': 'Good Afternoon',
+    'greeting.evening': 'Good Evening',
+    
     // Dashboard
     'today.collection': "Today's Collection",
     'milk.summary': 'Collection Summary',
@@ -27,6 +32,12 @@ const translations = {
     'weekly': 'Weekly',
     'monthly': 'Monthly',
     'recent.payments': 'Recent Payments',
+    
+    // Quick Actions
+    'passbook': 'Passbook',
+    'download': 'Download',
+    'share': 'Share',
+    'contact': 'Contact',
     
     // Milk Details
     'morning': 'Morning',
@@ -68,7 +79,6 @@ const translations = {
     
     // Actions
     'submit': 'Submit',
-    'download': 'Download',
     'download.pdf': 'Download PDF',
     
     // Status
@@ -109,6 +119,11 @@ const translations = {
     'about.title': 'हमारे बारे में',
     'logout': 'लॉग आउट',
     
+    // Greetings
+    'greeting.morning': 'सुप्रभात',
+    'greeting.afternoon': 'नमस्ते',
+    'greeting.evening': 'शुभ संध्या',
+    
     // Dashboard
     'today.collection': 'आज का संग्रह',
     'milk.summary': 'संग्रह सारांश',
@@ -120,6 +135,12 @@ const translations = {
     'weekly': 'साप्ताहिक',
     'monthly': 'मासिक',
     'recent.payments': 'हाल के भुगतान',
+    
+    // Quick Actions
+    'passbook': 'पासबुक',
+    'download': 'डाउनलोड',
+    'share': 'शेयर',
+    'contact': 'संपर्क',
     
     // Milk Details
     'morning': 'सुबह',
@@ -161,7 +182,6 @@ const translations = {
     
     // Actions
     'submit': 'जमा करें',
-    'download': 'डाउनलोड',
     'download.pdf': 'PDF डाउनलोड',
     
     // Status
