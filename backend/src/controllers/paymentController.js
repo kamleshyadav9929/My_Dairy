@@ -186,8 +186,42 @@ async function createPayment(req, res) {
                 referenceId: newPayment.id
             });
 
-            // Send push notification (async, don't await)
-            notificationService.sendPaymentNotification(newPayment, customer.name)
+            // Calculate remaining balance for notification
+            const startDate = getFirstDayOfMonth();
+            const endDate = getLocalDate();
+            
+            // Get total milk amount for this month
+            const { data: entriesData } = await supabase
+                .from('milk_entries')
+                .select('amount')
+                .eq('customer_id', customerId)
+                .gte('date', startDate)
+                .lte('date', endDate);
+            
+            const totalMilkAmount = (entriesData || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+            
+            // Get total payments for this month
+            const { data: paymentsData } = await supabase
+                .from('payments')
+                .select('amount')
+                .eq('customer_id', customerId)
+                .gte('date', startDate)
+                .lte('date', endDate);
+            
+            const totalPayments = (paymentsData || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+            
+            // Get total advances utilized
+            const { data: advancesData } = await supabase
+                .from('advances')
+                .select('utilized_amount')
+                .eq('customer_id', customerId);
+            
+            const totalAdvancesUsed = (advancesData || []).reduce((sum, a) => sum + (a.utilized_amount || 0), 0);
+            
+            const remainingBalance = totalMilkAmount - totalPayments - totalAdvancesUsed;
+
+            // Send push notification with remaining balance (async, don't await)
+            notificationService.sendPaymentNotification(newPayment, customer.name, remainingBalance)
                 .catch(err => console.log('Push notification error:', err.message));
         }
 

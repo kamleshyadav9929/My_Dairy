@@ -169,7 +169,7 @@ const sendMilkEntryNotification = async (entry, customerName) => {
     // Customer code (AMCU ID or customer ID)
     const customerCode = entry.customers?.amcu_customer_id || String(entry.customer_id).padStart(4, '0');
     
-    const title = `🥛 My Dairy`;
+    const title = `My Dairy`;
     const body = `Dear ${customerName} Milk pouring details are\nDT:${formattedDate}-${shiftName} CODE: ${customerCode},\nQTY:${qty}, FAT:${fat}, SNF:${snf}, RT:${rate},\nAMT:${amount} MY DAIRY`;
     
     return sendToCustomer(entry.customer_id, title, body, {
@@ -180,9 +180,20 @@ const sendMilkEntryNotification = async (entry, customerName) => {
 };
 
 // Send payment notification
-const sendPaymentNotification = async (payment, customerName) => {
-    const title = '💰 Payment Received';
-    const body = `₹${payment.amount} का payment मिला। धन्यवाद!`;
+const sendPaymentNotification = async (payment, customerName, remainingBalance = 0) => {
+    // Format date as DD-MM-YYYY
+    const dateObj = new Date(payment.date);
+    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
+    
+    // Format amounts
+    const paidAmount = parseFloat(payment.amount || 0).toFixed(2);
+    const balance = parseFloat(remainingBalance || 0).toFixed(2);
+    
+    // Payment mode
+    const paymentMode = payment.mode || 'Cash';
+    
+    const title = `💰 My Dairy`;
+    const body = `Dear ${customerName} Payment received.\nDT:${formattedDate} AMT:₹${paidAmount}\nMODE: ${paymentMode}\nREMAINING BALANCE: ₹${balance}\nThank you! MY DAIRY`;
     
     return sendToCustomer(payment.customer_id, title, body, {
         type: 'payment',
