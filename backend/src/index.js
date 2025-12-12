@@ -110,7 +110,13 @@ async function start() {
     });
 }
 
-start().catch(console.error);
+// Start server (local development only - skip on Vercel)
+if (!process.env.VERCEL) {
+    start().catch(console.error);
+}
+
+// Export for Vercel serverless
+module.exports = app;
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

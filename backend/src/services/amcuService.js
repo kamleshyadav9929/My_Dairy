@@ -14,6 +14,12 @@ const amcuEvents = new EventEmitter();
  * Initialize the AMCU serial port connection
  */
 async function initialize() {
+    // Skip on Vercel serverless (no serial port access)
+    if (process.env.VERCEL) {
+        console.log('AMCU: Serial port disabled on Vercel serverless');
+        return false;
+    }
+
     if (process.env.AMCU_ENABLED !== 'true') {
         console.log('AMCU service disabled via AMCU_ENABLED=false');
         return false;
