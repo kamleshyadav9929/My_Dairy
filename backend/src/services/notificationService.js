@@ -152,8 +152,25 @@ const deactivateTokens = async (tokens) => {
 
 // Send milk entry notification
 const sendMilkEntryNotification = async (entry, customerName) => {
-    const title = '🥛 नई दूध एंट्री';
-    const body = `${entry.quantity_litre}L ${entry.milk_type} दूध - ₹${entry.amount?.toFixed(0) || 0}`;
+    // Format date as DD-MM-YYYY
+    const dateObj = new Date(entry.date);
+    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
+    
+    // Get shift display name
+    const shiftName = entry.shift === 'morning' ? 'Morning' : 'Evening';
+    
+    // Format amounts
+    const qty = parseFloat(entry.quantity_litre || 0).toFixed(1);
+    const fat = parseFloat(entry.fat || 0).toFixed(1);
+    const snf = parseFloat(entry.snf || 0).toFixed(1);
+    const rate = parseFloat(entry.rate_per_litre || 0).toFixed(2);
+    const amount = parseFloat(entry.amount || 0).toFixed(2);
+    
+    // Customer code (AMCU ID or customer ID)
+    const customerCode = entry.customers?.amcu_customer_id || String(entry.customer_id).padStart(4, '0');
+    
+    const title = `🥛 My Dairy`;
+    const body = `Dear ${customerName} Milk pouring details are\nDT:${formattedDate}-${shiftName} CODE: ${customerCode},\nQTY:${qty}, FAT:${fat}, SNF:${snf}, RT:${rate},\nAMT:${amount} MY DAIRY`;
     
     return sendToCustomer(entry.customer_id, title, body, {
         type: 'milk_entry',
