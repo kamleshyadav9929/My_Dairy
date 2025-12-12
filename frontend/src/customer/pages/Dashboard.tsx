@@ -296,15 +296,17 @@ export default function CustomerDashboard() {
             <p className="text-sm">{t('no.data') || 'No payments yet'}</p>
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+          <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:pb-2 md:snap-x md:snap-mandatory md:scrollbar-hide">
             {recentPayments.map((payment) => (
-              <div key={payment.id} className="flex-shrink-0 w-40 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm snap-start">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center text-white mb-3 shadow-lg shadow-emerald-100">
+              <div key={payment.id} className="w-full md:flex-shrink-0 md:w-40 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm md:snap-start flex items-center gap-4 md:flex-col md:items-start">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-100">
                   <IndianRupee className="w-5 h-5" />
                 </div>
-                <p className="text-xl font-bold text-slate-800">{formatCurrency(payment.amount)}</p>
-                <p className="text-xs text-slate-400 mt-1">{new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
-                <span className="inline-block mt-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">
+                <div className="flex-1 md:flex-none">
+                  <p className="text-xl font-bold text-slate-800">{formatCurrency(payment.amount)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                </div>
+                <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase md:mt-2">
                   {payment.mode}
                 </span>
               </div>
