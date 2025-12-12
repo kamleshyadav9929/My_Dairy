@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { customerPortalApi } from '../../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { useAuth } from '../../context/AuthContext';
-import { generateDashboardShareMessage, shareNative } from '../utils/shareUtils';
+
 import { 
-  Milk, TrendingUp, Calendar, ChevronRight, Droplet, IndianRupee, Share2,
-  BookOpen, Download, Phone, Sun, Moon, Sunrise
+  Milk, TrendingUp, Calendar, ChevronRight, Droplet, IndianRupee,
+  Sun, Moon, Sunrise
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
@@ -68,29 +68,9 @@ export default function CustomerDashboard() {
     return { text: t('greeting.evening') || 'Good Evening', icon: Moon, color: 'text-indigo-400' };
   };
 
-  const handleShare = async () => {
-    const message = generateDashboardShareMessage({
-      customerName: user?.name || 'Customer',
-      customerId: user?.amcuId || String(user?.customerId) || '-',
-      todayMorning: today?.morning,
-      todayEvening: today?.evening,
-      monthlyTotal: summary?.totalMilkQty || 0,
-      monthlyAmount: summary?.totalAmount || 0,
-      pouringDays: summary?.pouringDays || 0
-    });
-    await shareNative('My Dairy Summary', message);
-  };
 
-  const handleDownloadPDF = () => {
-    // Navigate to passbook with download intent
-    window.location.href = '/customer/passbook?download=true';
-  };
 
-  const handleContactDairy = () => {
-    // You can set the dairy owner's phone number in settings
-    const dairyPhone = '9876543210'; // Replace with actual or fetch from settings
-    window.location.href = `tel:${dairyPhone}`;
-  };
+
 
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
@@ -167,45 +147,6 @@ export default function CustomerDashboard() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-4 gap-3">
-        <Link to="/customer/passbook" className="group">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center gap-2 hover:shadow-md hover:border-indigo-100 transition-all hover:-translate-y-0.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-medium text-slate-600">{t('passbook') || 'Passbook'}</span>
-          </div>
-        </Link>
-        
-        <button onClick={handleDownloadPDF} className="group">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center gap-2 hover:shadow-md hover:border-emerald-100 transition-all hover:-translate-y-0.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-105 transition-transform">
-              <Download className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-medium text-slate-600">{t('download') || 'Download'}</span>
-          </div>
-        </button>
-        
-        <button onClick={handleShare} className="group">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center gap-2 hover:shadow-md hover:border-blue-100 transition-all hover:-translate-y-0.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-              <Share2 className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-medium text-slate-600">{t('share') || 'Share'}</span>
-          </div>
-        </button>
-        
-        <button onClick={handleContactDairy} className="group">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center gap-2 hover:shadow-md hover:border-orange-100 transition-all hover:-translate-y-0.5">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-105 transition-transform">
-              <Phone className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-medium text-slate-600">{t('contact') || 'Contact'}</span>
-          </div>
-        </button>
       </div>
 
       {/* Today's Collection */}
