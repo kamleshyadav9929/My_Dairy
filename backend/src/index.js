@@ -21,9 +21,29 @@ const notificationService = require('./services/notificationService');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware - CORS with multiple allowed origins
+const allowedOrigins = [
+    'https://mydairy1.netlify.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'capacitor://localhost',
+    'http://localhost',
+    process.env.CORS_ORIGIN
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin) || process.env.CORS_ORIGIN === '*') {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(null, true); // Allow anyway for debugging - change to callback(new Error('Not allowed by CORS')) for strict mode
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
