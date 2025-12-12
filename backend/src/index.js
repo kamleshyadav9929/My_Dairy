@@ -51,11 +51,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check
 app.get('/api/health', (req, res) => {
+    // Try to initialize Firebase to check status
+    const firebaseStatus = notificationService.initializeFirebase();
+    
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
         database: 'supabase',
-        amcu: amcuService.getStatus()
+        amcu: amcuService.getStatus(),
+        firebase: {
+            initialized: firebaseStatus,
+            hasEnvVar: !!process.env.FIREBASE_SERVICE_ACCOUNT
+        }
     });
 });
 
