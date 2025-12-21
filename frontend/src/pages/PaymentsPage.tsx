@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { paymentApi, customerApi, advanceApi } from '../lib/api';
 import { Select } from '../components/ui/Select';
+import { useConfirm } from '../components/ui/ConfirmDialog';
+import { SkeletonTable } from '../components/ui/Skeleton';
 import { 
   Plus, 
   Edit, 
@@ -47,6 +49,7 @@ interface Customer {
 }
 
 export default function PaymentsPage() {
+  const confirmDialog = useConfirm();
   // Tab state
   const [activeTab, setActiveTab] = useState<'payments' | 'advances'>('payments');
   
@@ -210,7 +213,14 @@ export default function PaymentsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this payment?')) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete Payment?',
+      message: 'This will permanently delete this payment record.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
     try {
       await paymentApi.delete(id);
       loadPayments();
@@ -276,7 +286,14 @@ export default function PaymentsPage() {
   };
 
   const handleDeleteAdvance = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this advance?')) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete Advance?',
+      message: 'This will permanently delete this advance record.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
     try {
       await advanceApi.delete(id);
       loadAdvances();
@@ -419,9 +436,8 @@ export default function PaymentsPage() {
           // Payments Table
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col min-h-[400px]">
             {isLoading ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-12">
-                <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
-                <p className="text-gray-500 text-sm">Loading payments...</p>
+              <div className="p-4">
+                <SkeletonTable rows={6} cols={5} />
               </div>
             ) : payments.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
@@ -540,9 +556,8 @@ export default function PaymentsPage() {
           // Advances Table
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col min-h-[400px]">
             {isLoadingAdvances ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-12">
-                <Loader2 className="w-10 h-10 text-purple-600 animate-spin mb-4" />
-                <p className="text-gray-500 text-sm">Loading advances...</p>
+              <div className="p-4">
+                <SkeletonTable rows={6} cols={6} />
               </div>
             ) : advances.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">

@@ -189,10 +189,35 @@ export function generatePassbookPDF(data: PassbookData): void {
     { align: 'center' }
   );
   
-  // Save with clean filename
-  const cleanFrom = data.period.from.replace(/\//g, '-');
-  const cleanTo = data.period.to.replace(/\//g, '-');
-  const filename = `Passbook_${data.customer.amcuId}_${cleanFrom}_to_${cleanTo}.pdf`;
-  doc.save(filename);
+  // Android-compatible PDF opening
+  // Get PDF as base64 data URL and open in new tab
+  const pdfDataUrl = doc.output('datauristring');
+  
+  // Try to open in new window/tab - works on Android Chrome
+  const newWindow = window.open();
+  if (newWindow) {
+    newWindow.document.write(`
+      <html>
+        <head>
+          <title>Passbook PDF</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { margin: 0; padding: 0; }
+            iframe { width: 100%; height: 100vh; border: none; }
+          </style>
+        </head>
+        <body>
+          <iframe src="${pdfDataUrl}"></iframe>
+        </body>
+      </html>
+    `);
+    newWindow.document.close();
+  } else {
+    // Fallback: Create download link for browsers that block popups
+    const link = document.createElement('a');
+    link.href = pdfDataUrl;
+    link.download = `Passbook_${data.customer.amcuId}.pdf`;
+    link.click();
+  }
 }
 

@@ -16,6 +16,13 @@ const translations = {
     'about.title': 'About Us',
     'logout': 'Logout',
     
+    // Bottom Navigation
+    'nav.home': 'Home',
+    'nav.passbook': 'Passbook',
+    'nav.payments': 'Payments',
+    'nav.alerts': 'Alerts',
+    'nav.profile': 'Profile',
+    
     // Greetings
     'greeting.morning': 'Good Morning',
     'greeting.afternoon': 'Good Afternoon',
@@ -118,6 +125,13 @@ const translations = {
     'profile.title': 'मेरा प्रोफाइल',
     'about.title': 'हमारे बारे में',
     'logout': 'लॉग आउट',
+    
+    // Bottom Navigation
+    'nav.home': 'होम',
+    'nav.passbook': 'पासबुक',
+    'nav.payments': 'भुगतान',
+    'nav.alerts': 'अलर्ट',
+    'nav.profile': 'प्रोफाइल',
     
     // Greetings
     'greeting.morning': 'सुप्रभात',

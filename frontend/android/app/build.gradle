@@ -18,9 +18,31 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+    
+    // Enable hardware acceleration
+    defaultConfig {
+        renderscriptTargetApi 21
+        renderscriptSupportModeEnabled true
+    }
+    
+    // Optimize dex files
+    dexOptions {
+        javaMaxHeapSize "4g"
+        preDexLibraries true
+    }
+    
+    // Enable view binding for better performance
+    buildFeatures {
+        viewBinding true
     }
 }
 

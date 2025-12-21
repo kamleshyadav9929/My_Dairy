@@ -1,6 +1,6 @@
-@import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
 
 /* Custom theme variables */
 :root {
@@ -82,6 +82,64 @@
   animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* New animations for mobile UI */
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fadeIn {
+  animation: fadeInOverlay 0.2s ease-out forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Skeleton loader - animated shimmer effect */
+.skeleton {
+  background: linear-gradient(
+    90deg, 
+    #e2e8f0 0%, 
+    #f1f5f9 50%, 
+    #e2e8f0 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Modal scale-in animation */
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Safe area padding for iPhone notch and home indicator */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  /* Fallback for Android WebView which doesn't support safe-area-inset-top */
+  padding-top: 24px;
+  padding-top: max(24px, env(safe-area-inset-top, 24px));
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -100,17 +158,157 @@
   @apply w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin;
 }
 
-/* Remove focus outlines on mobile tap */
+/* ==============================================
+   NATIVE MOBILE EXPERIENCE
+   ============================================== */
+
+/* Prevent pull-to-refresh on the whole page, but allow in specific containers */
+html, body {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Native-like scrolling */
+.native-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbars on mobile for cleaner look */
 @media (max-width: 768px) {
-  button, a, input, select, textarea, [tabindex] {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+/* Haptic feedback simulation - scale effect on tap */
+.tap-scale {
+  transition: transform 0.1s ease;
+}
+
+.tap-scale:active {
+  transform: scale(0.97);
+}
+
+/* Stronger haptic for important buttons */
+.tap-scale-strong:active {
+  transform: scale(0.94);
+}
+
+/* Remove all tap highlights and outlines on mobile */
+@media (max-width: 768px) {
+  button, a, input, select, textarea, [tabindex], [role="button"] {
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     outline: none !important;
+    touch-action: manipulation;
   }
   
   button:focus, a:focus, input:focus, select:focus, textarea:focus {
     outline: none !important;
     box-shadow: none !important;
   }
+  
+  /* Allow text selection only in text content */
+  p, span, h1, h2, h3, h4, h5, h6 {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Page transition animations */
+.page-enter {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.page-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Pull to refresh indicator */
+.ptr-element {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+/* iOS-style rubber band effect at scroll boundaries */
+.rubber-band {
+  overscroll-behavior-y: auto;
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Prevent long-press context menu on images and links */
+img, a {
+  -webkit-touch-callout: none;
+}
+
+/* Smooth momentum for all scrollable areas */
+[class*="overflow-"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Native button press effect */
+button, [role="button"], .btn {
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+button:active, [role="button"]:active, .btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* Card press effect */
+.card-press:active {
+  transform: scale(0.99);
+  opacity: 0.95;
+}
+
+/* Bottom sheet drag indicator */
+.drag-indicator {
+  width: 36px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  margin: 8px auto;
 }
 
 /* Remove orange border on focus for all elements */
@@ -121,5 +319,101 @@
 *:focus-visible {
   outline: 2px solid #4f46e5;
   outline-offset: 2px;
+}
+
+/* Disable zoom on double tap for inputs */
+input, textarea, select {
+  font-size: 16px !important; /* Prevents zoom on iOS */
+}
+
+/* Fixed elements should respect safe areas */
+.fixed-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.fixed-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ====== ANDROID PERFORMANCE OPTIMIZATIONS ====== */
+
+/* Force GPU acceleration for smoother animations */
+.gpu-accelerated,
+.glass-card,
+.animate-fadeIn,
+.animate-slideUp,
+.animate-scale-in {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Smooth 60fps animations */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hardware-accelerated transitions */
+.hw-accelerated {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+/* Optimize scrolling containers */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Android-specific touch feedback */
+@supports (-webkit-touch-callout: none) {
+  .touch-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .touch-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(0,0,0,0.1) 10%, transparent 10%);
+    transform: scale(10);
+    opacity: 0;
+    transition: transform 0.5s, opacity 1s;
+  }
+  
+  .touch-ripple:active::after {
+    transform: scale(0);
+    opacity: 1;
+    transition: 0s;
+  }
+}
+
+/* Optimize image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  -webkit-user-drag: none;
+}
+
+/* Disable text selection on interactive elements */
+button, [role="button"], .no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Fast tap response */
+a, button, [role="button"], input, select, textarea {
+  touch-action: manipulation;
 }
 

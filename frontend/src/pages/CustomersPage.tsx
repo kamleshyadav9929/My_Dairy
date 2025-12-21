@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { customerApi } from '../lib/api';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { useConfirm } from '../components/ui/ConfirmDialog';
+import { SkeletonTable } from '../components/ui/Skeleton';
 import { 
   Plus, 
   Search, 
@@ -110,6 +112,7 @@ const ActionMenu = ({
 };
 
 export default function CustomersPage() {
+  const confirm = useConfirm();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -186,18 +189,24 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (id: number) => {
+    const customer = customers.find(c => c.id === id);
     setMenuState(null);
-    if (!confirm('Are you sure you want to delete this customer? This will also delete all their milk entries, payments, and advances.')) {
-      return;
-    }
+    
+    const confirmed = await confirm({
+      title: 'Delete Customer?',
+      message: `This will permanently delete ${customer?.name || 'this customer'} and all their milk entries, payments, and advances.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+    
+    if (!confirmed) return;
     
     try {
       await customerApi.delete(id);
       loadCustomers();
     } catch (error: any) {
       console.error('Failed to delete customer:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
-      alert(`Failed to delete customer: ${errorMessage}`);
     }
   };
 
@@ -272,8 +281,8 @@ export default function CustomersPage() {
       {/* Content */}
       <div className="glass-card overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+          <div className="p-4">
+            <SkeletonTable rows={6} cols={5} />
           </div>
         ) : customers.length === 0 ? (
           <div className="text-center py-20 px-6">

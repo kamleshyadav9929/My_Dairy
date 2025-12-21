@@ -1,228 +1,312 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { customerPortalApi } from '../../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { useAuth } from '../../context/AuthContext';
+import { getCacheIgnoreExpiry, setCache, CACHE_KEYS } from '../../lib/cache';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 import { 
-  Milk, TrendingUp, Calendar, ChevronRight, Droplet, IndianRupee,
-  Sun, Moon, Sunrise
+  Milk, TrendingUp, Calendar, ChevronRight, IndianRupee,
+  Sun, Moon, Sunrise, RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+
+// Skeleton Components
+function SkeletonHero() {
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <div className="skeleton h-4 w-24 mb-3" />
+      <div className="skeleton h-10 w-40 mb-4" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="skeleton h-20 rounded-xl" />
+        <div className="skeleton h-20 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonTodayCard() {
+  return (
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+      <div className="skeleton h-5 w-32 mb-4" />
+      <div className="space-y-3">
+        <div className="skeleton h-16 rounded-xl" />
+        <div className="skeleton h-16 rounded-xl" />
+      </div>
+    </div>
+  );
+}
 
 export default function CustomerDashboard() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const [summary, setSummary] = useState<any>(null);
-  const [today, setToday] = useState<any>(null);
-  const [recentPayments, setRecentPayments] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [lastSynced, setLastSynced] = useState<Date>(new Date());
-  const [isLoading, setIsLoading] = useState(true);
+  const { isOffline } = useNetworkStatus();
+  const [summary, setSummary] = useState<any>(() => getCacheIgnoreExpiry(CACHE_KEYS.DASHBOARD_SUMMARY));
+  const [today, setToday] = useState<any>(() => getCacheIgnoreExpiry(CACHE_KEYS.DASHBOARD_TODAY));
+  const [recentPayments, setRecentPayments] = useState<any[]>(() => getCacheIgnoreExpiry(CACHE_KEYS.DASHBOARD_PAYMENTS) || []);
+  const [chartData, setChartData] = useState<any[]>(() => getCacheIgnoreExpiry(CACHE_KEYS.DASHBOARD_CHART) || []);
+  const [isLoading, setIsLoading] = useState(() => !getCacheIgnoreExpiry(CACHE_KEYS.DASHBOARD_SUMMARY));
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const pullStartY = useRef(0);
+  const isPulling = useRef(false);
 
   // Initialize push notifications
   usePushNotifications({
     onNotificationReceived: () => loadData()
   });
 
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 15000);
-    const handleFocus = () => loadData();
-    window.addEventListener('focus', handleFocus);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async (showRefresh = false) => {
+    if (isOffline) {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      return;
+    }
+    
     try {
+      if (showRefresh) setIsRefreshing(true);
+      
       const [sumRes, todayRes, payRes, chartRes] = await Promise.all([
         customerPortalApi.getDashboard(),
         customerPortalApi.getTodayCollection(),
         customerPortalApi.getPayments({ limit: 3 }),
         customerPortalApi.getLastDaysCollection(7)
       ]);
-      setSummary(sumRes.data || {});
-      setToday(todayRes.data || {});
-      setRecentPayments(payRes.data?.payments || []);
-      setChartData(Array.isArray(chartRes.data) ? chartRes.data : []);
-      setLastSynced(new Date());
+      
+      const summaryData = sumRes.data || {};
+      const todayData = todayRes.data || {};
+      const paymentsData = payRes.data?.payments || [];
+      const chartDataRes = Array.isArray(chartRes.data) ? chartRes.data : [];
+      
+      // Update state
+      setSummary(summaryData);
+      setToday(todayData);
+      setRecentPayments(paymentsData);
+      setChartData(chartDataRes);
+      
+      // Cache data for 30 minutes
+      setCache(CACHE_KEYS.DASHBOARD_SUMMARY, summaryData, 30 * 60 * 1000);
+      setCache(CACHE_KEYS.DASHBOARD_TODAY, todayData, 30 * 60 * 1000);
+      setCache(CACHE_KEYS.DASHBOARD_PAYMENTS, paymentsData, 30 * 60 * 1000);
+      setCache(CACHE_KEYS.DASHBOARD_CHART, chartDataRes, 30 * 60 * 1000);
     } catch (error) {
       console.error('Dashboard load error:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [isOffline]);
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(() => loadData(), 30000); // Refresh every 30s
+    const handleFocus = () => loadData();
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadData]);
+
+  // Pull-to-refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      pullStartY.current = e.touches[0].clientY;
+      isPulling.current = true;
     }
   };
 
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isPulling.current) return;
+    const pullDistance = e.touches[0].clientY - pullStartY.current;
+    if (pullDistance > 80 && window.scrollY === 0 && !isRefreshing) {
+      loadData(true);
+      isPulling.current = false;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isPulling.current = false;
+  };
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat('en-IN', { 
+      style: 'currency', 
+      currency: 'INR', 
+      maximumFractionDigits: 0 
+    }).format(amount);
   };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: t('greeting.morning') || 'Good Morning', icon: Sunrise, color: 'text-amber-500' };
-    if (hour < 17) return { text: t('greeting.afternoon') || 'Good Afternoon', icon: Sun, color: 'text-orange-500' };
-    return { text: t('greeting.evening') || 'Good Evening', icon: Moon, color: 'text-indigo-400' };
+    if (hour < 12) return { text: t('greeting.morning'), icon: Sunrise };
+    if (hour < 17) return { text: t('greeting.afternoon'), icon: Sun };
+    return { text: t('greeting.evening'), icon: Moon };
   };
-
-
-
-
 
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
 
-  if (isLoading) return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center">
-      <div className="relative">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 animate-pulse" />
-        <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-transparent border-t-white/30 animate-spin" />
+  // Loading State with Skeletons
+  if (isLoading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        {/* Greeting Skeleton */}
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <div className="skeleton h-4 w-24 mb-2" />
+            <div className="skeleton h-7 w-36" />
+          </div>
+          <div className="skeleton w-12 h-12 rounded-2xl" />
+        </div>
+        <SkeletonHero />
+        <SkeletonTodayCard />
       </div>
-      <p className="text-slate-400 text-sm font-medium mt-4 animate-pulse">{t('loading')}</p>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="space-y-5 pb-24">
+    <div 
+      className="space-y-5 pb-4"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Greeting Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <GreetingIcon className={`w-5 h-5 ${greeting.color}`} />
-            <span className="text-sm font-medium text-slate-500">{greeting.text}</span>
+            <GreetingIcon className="w-4 h-4 text-slate-400" />
+            <span className="text-sm text-slate-500">{greeting.text}</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+          <h1 className="text-xl font-bold text-slate-800">
             {user?.name || 'Customer'}
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
         </div>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-200">
-          {(user?.name || 'C').charAt(0).toUpperCase()}
-        </div>
+        <button 
+          onClick={() => loadData(true)}
+          disabled={isRefreshing}
+          className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
-      {/* Hero Card - Monthly Earnings */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl">
-        {/* Animated Background Blobs */}
-        <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500 rounded-full blur-[60px] opacity-30 -mr-10 -mt-10 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500 rounded-full blur-[50px] opacity-25 -ml-8 -mb-8" />
-        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-blue-400 rounded-full blur-[40px] opacity-20 transform -translate-x-1/2 -translate-y-1/2" />
+      {/* Hero Card - Monthly Earnings with Premium Background */}
+      <div className="relative overflow-hidden rounded-2xl shadow-xl">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: 'url(/hero-bg.png)' }}
+        />
+        {/* Dark Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-emerald-900/60" />
         
-        <div className="relative p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">{t('total.earnings') || 'This Month'}</p>
-              <h2 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                {formatCurrency(summary?.totalAmount || 0)}
-              </h2>
-            </div>
-            <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/10">
-              <TrendingUp className="w-7 h-7 text-emerald-400" />
-            </div>
-          </div>
+        {/* Glassmorphism content container */}
+        <div className="relative p-5">
+          <p className="text-white/80 text-xs font-medium uppercase tracking-wider mb-1">
+            {t('total.earnings')}
+          </p>
+          <h2 className="text-4xl font-bold tracking-tight text-white mb-5 drop-shadow-lg">
+            {formatCurrency(summary?.totalAmount || 0)}
+          </h2>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/5">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 shadow-inner">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Milk className="w-4 h-4 text-blue-300" />
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Milk className="w-4 h-4 text-white" />
                 </div>
+                <span className="text-xs text-white/70 font-medium">{t('total.milk')}</span>
               </div>
-              <p className="text-2xl font-bold">{summary?.totalMilkQty?.toFixed(1) || '0'}</p>
-              <p className="text-xs text-slate-400 mt-1">{t('total.milk') || 'Total Litres'}</p>
+              <p className="text-2xl font-bold text-white">{summary?.totalMilkQty?.toFixed(1) || '0'}<span className="text-lg font-normal ml-1">L</span></p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/5">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 shadow-inner">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-purple-300" />
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-white" />
                 </div>
+                <span className="text-xs text-white/70 font-medium">{t('pouring.days')}</span>
               </div>
-              <p className="text-2xl font-bold">{summary?.pouringDays || 0}</p>
-              <p className="text-xs text-slate-400 mt-1">{t('pouring.days') || 'Pouring Days'}</p>
+              <p className="text-2xl font-bold text-white">{summary?.pouringDays || 0}<span className="text-lg font-normal ml-1">days</span></p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Today's Collection */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-white font-bold text-base">{t('today.collection') || "Today's Collection"}</h3>
-              <p className="text-slate-400 text-xs mt-0.5">
-                {t('last.synced') || 'Last synced'}: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
-            <button onClick={loadData} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
+      {/* Today's Collection - Simplified */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden card-press">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <h3 className="font-bold text-slate-800">{t('today.collection')}</h3>
+          <span className="text-xs text-slate-400">
+            {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+          </span>
         </div>
         
-        <div className="p-4">
-          {/* Header */}
-          <div className="grid grid-cols-5 gap-2 mb-3 text-center">
-            <div></div>
-            <div className="flex flex-col items-center">
-              <Milk className="w-5 h-5 text-indigo-500 mb-1" />
-              <span className="text-[10px] font-semibold text-slate-400 uppercase">Qty</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Droplet className="w-5 h-5 text-amber-500 fill-amber-100 mb-1" />
-              <span className="text-[10px] font-semibold text-slate-400 uppercase">{t('milk.fat') || 'Fat'}</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Droplet className="w-5 h-5 text-lime-500 fill-lime-100 mb-1" />
-              <span className="text-[10px] font-semibold text-slate-400 uppercase">{t('milk.snf') || 'SNF'}</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-5 h-5 rounded-full border-2 border-emerald-500 flex items-center justify-center mb-1">
-                <IndianRupee className="w-3 h-3 text-emerald-500" />
-              </div>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase">Amt</span>
-            </div>
-          </div>
-
+        <div className="divide-y divide-slate-50">
           {/* Morning Row */}
-          <div className="grid grid-cols-5 gap-2 py-3 items-center text-center bg-gradient-to-r from-amber-50 to-transparent rounded-xl mb-2">
-            <div className="flex items-center gap-2 pl-3">
-              <Sunrise className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-semibold text-slate-700">{t('morning') || 'AM'}</span>
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                <Sunrise className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800">{t('morning')}</p>
+                <p className="text-xs text-slate-400">
+                  {today?.morning?.qty > 0 
+                    ? `Fat: ${today?.morning?.fat?.toFixed(1) || '-'}% • SNF: ${today?.morning?.snf?.toFixed(1) || '-'}%` 
+                    : 'No entry yet'}
+                </p>
+              </div>
             </div>
-            <div className="font-bold text-slate-800">{today?.morning?.qty?.toFixed(1) || '-'}</div>
-            <div className="font-bold text-amber-600">{today?.morning?.fat?.toFixed(1) || '-'}</div>
-            <div className="font-bold text-lime-600">{today?.morning?.snf?.toFixed(1) || '-'}</div>
-            <div className="font-bold text-emerald-600">₹{today?.morning?.amount?.toFixed(0) || '-'}</div>
+            <div className="text-right">
+              {today?.morning?.qty > 0 ? (
+                <>
+                  <p className="font-bold text-slate-800">{today?.morning?.qty?.toFixed(1)} L</p>
+                  <p className="text-sm font-semibold text-emerald-600">₹{today?.morning?.amount?.toFixed(0)}</p>
+                </>
+              ) : (
+                <span className="text-sm text-slate-300">—</span>
+              )}
+            </div>
           </div>
 
           {/* Evening Row */}
-          <div className="grid grid-cols-5 gap-2 py-3 items-center text-center bg-gradient-to-r from-indigo-50 to-transparent rounded-xl">
-            <div className="flex items-center gap-2 pl-3">
-              <Moon className="w-4 h-4 text-indigo-500" />
-              <span className="text-sm font-semibold text-slate-700">{t('evening') || 'PM'}</span>
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <Moon className="w-5 h-5 text-indigo-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800">{t('evening')}</p>
+                <p className="text-xs text-slate-400">
+                  {today?.evening?.qty > 0 
+                    ? `Fat: ${today?.evening?.fat?.toFixed(1) || '-'}% • SNF: ${today?.evening?.snf?.toFixed(1) || '-'}%` 
+                    : 'No entry yet'}
+                </p>
+              </div>
             </div>
-            <div className="font-bold text-slate-800">{today?.evening?.qty?.toFixed(1) || '-'}</div>
-            <div className="font-bold text-amber-600">{today?.evening?.fat?.toFixed(1) || '-'}</div>
-            <div className="font-bold text-lime-600">{today?.evening?.snf?.toFixed(1) || '-'}</div>
-            <div className="font-bold text-emerald-600">₹{today?.evening?.amount?.toFixed(0) || '-'}</div>
+            <div className="text-right">
+              {today?.evening?.qty > 0 ? (
+                <>
+                  <p className="font-bold text-slate-800">{today?.evening?.qty?.toFixed(1)} L</p>
+                  <p className="text-sm font-semibold text-emerald-600">₹{today?.evening?.amount?.toFixed(0)}</p>
+                </>
+              ) : (
+                <span className="text-sm text-slate-300">—</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* 7-Day Trend Chart */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 card-press">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-bold text-slate-800">{t('collection.trends') || 'Collection Trends'}</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{t('milk.quantity.time') || 'Last 7 days'}</p>
+            <h3 className="font-bold text-slate-800">{t('collection.trends')}</h3>
+            <p className="text-xs text-slate-400">Last 7 days</p>
           </div>
           <div className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
             <TrendingUp className="w-3 h-3" />
@@ -230,83 +314,90 @@ export default function CustomerDashboard() {
           </div>
         </div>
         
-        <div className="h-40 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorQtyGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366F1" stopOpacity={0.4}/>
-                  <stop offset="100%" stopColor="#6366F1" stopOpacity={0.02}/>
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short' })}
-                tick={{ fontSize: 10, fill: '#94A3B8' }}
-                axisLine={false}
-                tickLine={false}
-                dy={8}
-              />
-              <YAxis 
-                tick={{ fontSize: 10, fill: '#94A3B8' }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) => value > 0 ? `${value}L` : '0'}
-                domain={[0, 'auto']}
-              />
-              <Tooltip 
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length && label) {
-                    return (
-                      <div className="bg-slate-800 text-white px-3 py-2 rounded-xl shadow-xl text-sm">
-                        <p className="font-medium">{new Date(label).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</p>
-                        <p className="text-indigo-300 mt-1">{Number(payload[0].value).toFixed(1)} L</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="totalQty" 
-                stroke="#6366F1" 
-                strokeWidth={2.5}
-                fill="url(#colorQtyGradient)"
-                dot={false}
-                activeDot={{ r: 5, fill: '#fff', stroke: '#6366F1', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="h-36">
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { weekday: 'short' })}
+                  tick={{ fontSize: 10, fill: '#94A3B8' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10, fill: '#94A3B8' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => value > 0 ? `${value}` : ''}
+                  width={35}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(79, 70, 229, 0.05)' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length && label) {
+                      return (
+                        <div className="bg-slate-800 text-white px-3 py-2 rounded-lg shadow-lg text-sm">
+                          <p className="font-medium">{new Date(label).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</p>
+                          <p className="text-indigo-300">{Number(payload[0].value).toFixed(1)} L</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar 
+                  dataKey="totalQty" 
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={32}
+                >
+                {chartData.map((_, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={index === chartData.length - 1 ? '#4F46E5' : '#E0E7FF'} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center text-slate-300">
+              <p className="text-sm">No data available</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Recent Payments */}
       <div>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h3 className="font-bold text-slate-800">{t('recent.payments') || 'Recent Payments'}</h3>
-          <Link to="/customer/latest-payments" className="flex items-center gap-1 text-xs text-indigo-600 font-medium hover:text-indigo-700">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-slate-800">{t('recent.payments')}</h3>
+          <Link to="/customer/latest-payments" className="flex items-center gap-1 text-xs text-indigo-600 font-medium">
             View All <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
         
         {recentPayments.length === 0 ? (
-          <div className="py-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <IndianRupee className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-            <p className="text-sm">{t('no.data') || 'No payments yet'}</p>
+            <p className="text-sm text-slate-400">{t('no.data')}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 md:flex-row md:overflow-x-auto md:pb-2 md:snap-x md:snap-mandatory md:scrollbar-hide">
+          <div className="space-y-2">
             {recentPayments.map((payment) => (
-              <div key={payment.id} className="w-full md:flex-shrink-0 md:w-40 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm md:snap-start flex items-center gap-4 md:flex-col md:items-start">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-100">
-                  <IndianRupee className="w-5 h-5" />
+              <div key={payment.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <IndianRupee className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-800">{formatCurrency(payment.amount)}</p>
+                    <p className="text-xs text-slate-400">
+                      {new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 md:flex-none">
-                  <p className="text-xl font-bold text-slate-800">{formatCurrency(payment.amount)}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{new Date(payment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
-                </div>
-                <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase md:mt-2">
+                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-500 uppercase">
                   {payment.mode}
                 </span>
               </div>

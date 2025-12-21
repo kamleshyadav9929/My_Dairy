@@ -101,6 +101,13 @@ function processLine(line) {
         const key = line.substring(0, colonIndex).trim().toUpperCase();
         const value = line.substring(colonIndex + 1).trim();
         
+        // CLEAR PACKET on CID detection to prevent data leakage between farmers
+        // CID marks the start of a new farmer's data
+        if (key === 'CID') {
+            currentPacket = {}; // Clear any stale data from previous farmer
+            console.log('[AMCU] New farmer detected, packet cleared');
+        }
+        
         currentPacket[key] = value;
     }
 }
@@ -129,6 +136,14 @@ async function processPacket() {
     } catch (error) {
         console.error('Error processing AMCU packet:', error.message);
         logRawPacket(JSON.stringify(packet), false, error.message);
+        
+        // EMIT ERROR EVENT so frontend can beep/alert the operator
+        amcuEvents.emit('error', {
+            type: error.message.includes('rate') || error.message.includes('amount') ? 'RATE_ERROR' : 'PARSE_ERROR',
+            message: error.message,
+            packet: packet,
+            timestamp: new Date().toISOString()
+        });
     }
 }
 
@@ -180,16 +195,25 @@ async function createMilkEntry(data) {
     let amount = data.amount;
     
     if (data.fat && data.snf) {
-        ratePerLitre = rateService.calculateRate(milkType, data.fat, data.snf);
+        ratePerLitre = await rateService.calculateRate(milkType, data.fat, data.snf);
     } else {
-        ratePerLitre = rateService.calculateRate(milkType, 4.0, 8.5); // Default values
+        ratePerLitre = await rateService.calculateRate(milkType, 4.0, 8.5); // Default values
     }
     
     if (!amount) {
+        // CRITICAL: Reject entries with zero rate (no matching rate card)
+        if (!ratePerLitre || ratePerLitre <= 0) {
+            throw new Error(`No rate card found for ${milkType} milk with Fat: ${data.fat || 4.0}%, SNF: ${data.snf || 8.5}%. Configure rate cards first.`);
+        }
         amount = rateService.calculateAmount(data.quantityLitre, ratePerLitre);
     } else {
         // If amount is provided, calculate rate from it
         ratePerLitre = Math.round((amount / data.quantityLitre) * 100) / 100;
+    }
+    
+    // Final validation: Ensure amount is not zero
+    if (!amount || amount <= 0) {
+        throw new Error('Cannot create entry with ₹0 amount. Check rate card configuration.');
     }
 
     // Insert milk entry using Supabase

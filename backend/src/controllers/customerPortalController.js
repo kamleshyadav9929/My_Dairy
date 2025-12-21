@@ -192,7 +192,6 @@ async function getLastDaysCollection(req, res) {
             .eq('customer_id', customerId)
             .gte('date', getLocalDate(startDate))
             .lte('date', getLocalDate(endDate))
-            .lte('date', getLocalDate(endDate))
             .order('date', { ascending: true });
 
         if (error) throw error;

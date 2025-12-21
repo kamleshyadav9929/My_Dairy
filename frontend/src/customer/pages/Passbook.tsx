@@ -1,68 +1,169 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { customerPortalApi } from '../../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { useAuth } from '../../context/AuthContext';
 import { generatePassbookPDF } from '../../utils/pdfExport';
 import { generatePassbookShareMessage, shareNative } from '../utils/shareUtils';
-import { Filter, Download, Loader2, Milk, IndianRupee, Share2 } from 'lucide-react';
+import { getCacheIgnoreExpiry, setCache, CACHE_KEYS } from '../../lib/cache';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { Download, Loader2, Milk, IndianRupee, Share2, ChevronLeft, ChevronRight, Sunrise, Moon } from 'lucide-react';
+
+// Skeleton Components
+function SkeletonBalance() {
+  return (
+    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5">
+      <div className="skeleton h-4 w-24 mb-2 opacity-20" />
+      <div className="skeleton h-10 w-36 opacity-20" />
+    </div>
+  );
+}
+
+function SkeletonTransactions() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <div className="p-4 border-b border-slate-100">
+        <div className="skeleton h-5 w-32" />
+      </div>
+      <div className="p-4 space-y-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex items-center gap-4">
+            <div className="skeleton w-10 h-10 rounded-full" />
+            <div className="flex-1">
+              <div className="skeleton h-4 w-24 mb-2" />
+              <div className="skeleton h-3 w-16" />
+            </div>
+            <div className="skeleton h-5 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Passbook() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const { isOffline } = useNetworkStatus();
+  const [data, setData] = useState<any>(() => getCacheIgnoreExpiry(CACHE_KEYS.PASSBOOK_ENTRIES));
+  const [loading, setLoading] = useState(() => !getCacheIgnoreExpiry(CACHE_KEYS.PASSBOOK_ENTRIES));
   const [downloading, setDownloading] = useState(false);
   const [transactionFilter, setTransactionFilter] = useState<'all' | 'milk' | 'payment'>('all');
   
-  // Default: Current month
-  const today = new Date();
-  const [fromDate, setFromDate] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
-  );
-  const [toDate, setToDate] = useState(today.toISOString().split('T')[0]);
+  // Month navigation - null means "All Time"
+  const [currentMonth, setCurrentMonth] = useState<Date | null>(null); // null = All Time (default)
+  
+  const getMonthRange = (date: Date | null) => {
+    if (!date) {
+      // All time: from 2020 to today
+      return {
+        from: '2020-01-01',
+        to: new Date().toISOString().split('T')[0]
+      };
+    }
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    return {
+      from: start.toISOString().split('T')[0],
+      to: end.toISOString().split('T')[0]
+    };
+  };
 
-  useEffect(() => {
-    loadPassbook();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const { from: fromDate, to: toDate } = getMonthRange(currentMonth);
 
-  const loadPassbook = async () => {
+  const loadPassbook = useCallback(async () => {
+    if (isOffline) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await customerPortalApi.getPassbook({ from: fromDate, to: toDate });
       setData(res.data);
+      // Cache for 30 minutes
+      setCache(CACHE_KEYS.PASSBOOK_ENTRIES, res.data, 30 * 60 * 1000);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
+  }, [fromDate, toDate, isOffline]);
+
+  useEffect(() => {
+    loadPassbook();
+  }, [loadPassbook]);
+
+  const goToPrevMonth = () => {
+    if (!currentMonth) {
+      // If in All Time mode, go to current month
+      setCurrentMonth(new Date());
+    } else {
+      setCurrentMonth(prev => prev ? new Date(prev.getFullYear(), prev.getMonth() - 1, 1) : new Date());
+    }
   };
 
-  // Filter transactions based on selected type
+  const goToNextMonth = () => {
+    if (!currentMonth) return;
+    const next = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    if (next <= new Date()) {
+      setCurrentMonth(next);
+    }
+  };
+
+  const isAllTime = currentMonth === null;
+  const isCurrentMonthSelected = currentMonth ? 
+    (currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear()) : 
+    false;
+
+  // Filter transactions
   const filteredTransactions = useMemo(() => {
     if (!data?.transactions) return [];
     
-    if (transactionFilter === 'all') return data.transactions;
-    if (transactionFilter === 'milk') return data.transactions.filter((t: any) => t.type === 'MILK');
-    if (transactionFilter === 'payment') return data.transactions.filter((t: any) => t.type === 'PAYMENT');
-    return data.transactions;
+    let filtered = data.transactions;
+    if (transactionFilter === 'milk') filtered = filtered.filter((t: any) => t.type === 'MILK');
+    if (transactionFilter === 'payment') filtered = filtered.filter((t: any) => t.type === 'PAYMENT');
+    
+    return filtered;
   }, [data?.transactions, transactionFilter]);
+
+  // Group transactions by date
+  const groupedTransactions = useMemo(() => {
+    const groups: { [key: string]: any[] } = {};
+    
+    [...filteredTransactions].reverse().forEach((t: any) => {
+      const dateKey = t.date;
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(t);
+    });
+    
+    return groups;
+  }, [filteredTransactions]);
+
+  const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  };
 
   const handleDownloadPDF = async () => {
     if (!data || !data.transactions) return;
     
     setDownloading(true);
     try {
-      // Calculate total litres from transactions
       const totalLitres = data.transactions
         .filter((row: any) => row.type === 'MILK')
         .reduce((sum: number, row: any) => sum + (Number(row.details?.quantity_litre) || 0), 0);
 
-      // Transform transactions to passbook entries format
       const entries = data.transactions.map((row: any) => ({
         date: row.date || '',
         type: row.type === 'MILK' ? 'entry' : 'payment',
         description: row.type === 'MILK' 
-          ? `${row.details?.quantity_litre || 0}L ${row.details?.shift === 'M' ? 'Morning' : 'Evening'} - Fat: ${row.details?.fat || 0}%, SNF: ${row.details?.snf || 0}%`
+          ? `${row.details?.quantity_litre || 0}L ${row.details?.shift === 'M' ? 'Morning' : 'Evening'}`
           : row.description || 'Payment',
         debit: Number(row.debit) || 0,
         credit: Number(row.credit) || 0,
@@ -82,23 +183,23 @@ export default function Passbook() {
           totalAdvances: Number(data.summary?.totalAdvances) || 0,
           balance: Number(data.summary?.balance) || 0,
         },
-        period: {
-          from: fromDate,
-          to: toDate,
-        },
+        period: { from: fromDate, to: toDate },
       };
 
       generatePassbookPDF(pdfData);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
     } finally {
       setDownloading(false);
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Math.abs(amount));
+    return new Intl.NumberFormat('en-IN', { 
+      style: 'currency', 
+      currency: 'INR', 
+      maximumFractionDigits: 0 
+    }).format(Math.abs(amount));
   };
 
   const handleShare = async () => {
@@ -123,198 +224,189 @@ export default function Passbook() {
     await shareNative('My Dairy Passbook', message);
   };
 
-  return (
-    <div className="pb-20">
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">{t('passbook.title')}</h2>
+  // Loading state
+  if (loading && !data) {
+    return (
+      <div className="space-y-4 pb-4">
+        <h2 className="text-xl font-bold text-slate-800">{t('passbook.title')}</h2>
+        <SkeletonBalance />
+        <SkeletonTransactions />
+      </div>
+    );
+  }
 
-      {/* Hero Card - Balance */}
+  return (
+    <div className="space-y-4 pb-4">
+      <h2 className="text-xl font-bold text-slate-800">{t('passbook.title')}</h2>
+
+      {/* Balance Card */}
       {data && (
-        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 text-white shadow-xl shadow-slate-200 mb-6 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px] -mr-16 -mt-16 pointer-events-none" />
-           <p className="text-slate-400 text-sm font-medium mb-1">{t('closing.balance')}</p>
-           <h3 className="text-4xl font-bold tracking-tight mb-4">{formatCurrency(data?.summary?.balance || 0)}</h3>
-           <div className="flex items-center gap-4 text-sm opacity-80">
-              <div className="flex items-center gap-2">
-                 <div className={`w-2 h-2 rounded-full ${(data?.summary?.balance || 0) >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                 <span>{(data?.summary?.balance || 0) >= 0 ? t('credit.status') : t('debit.status')}</span>
-              </div>
-           </div>
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-8 -mt-8" />
+          <div className="relative">
+            <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-1">
+              {t('closing.balance')}
+            </p>
+            <h3 className="text-3xl font-bold tracking-tight mb-3">
+              {formatCurrency(data?.summary?.balance || 0)}
+            </h3>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleShare}
+                disabled={!data?.transactions?.length}
+                className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <Share2 className="w-4 h-4" />
+                Share
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                disabled={downloading || !data?.transactions?.length}
+                className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                PDF
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 block">{t('date.from')}</label>
-            <input 
-              type="date" 
-              value={fromDate}
-              onChange={e => setFromDate(e.target.value)}
-              className="w-full p-3 bg-slate-50 rounded-xl text-sm font-semibold text-slate-800 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
-              style={{ colorScheme: 'light' }}
-            />
-          </div>
-          <div>
-            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 block">{t('date.to')}</label>
-            <input 
-              type="date" 
-              value={toDate}
-              onChange={e => setToDate(e.target.value)}
-              className="w-full p-3 bg-slate-50 rounded-xl text-sm font-semibold text-slate-800 border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
-              style={{ colorScheme: 'light' }}
-            />
-          </div>
-        </div>
-        <button 
-          onClick={loadPassbook}
-          className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
+      {/* Month Navigator */}
+      <div className="flex items-center justify-between bg-white rounded-xl p-2 border border-slate-100">
+        <button
+          onClick={goToPrevMonth}
+          className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors tap-scale"
         >
-          <Filter className="w-4 h-4" /> {t('update.statement')}
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        
+        <div className="flex-1 text-center">
+          <p className="font-bold text-slate-800 text-sm">
+            {isAllTime ? 'All Time' : currentMonth?.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+          </p>
+        </div>
+        
+        <button
+          onClick={goToNextMonth}
+          disabled={isAllTime || isCurrentMonthSelected}
+          className="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed tap-scale"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+        
+        {/* Divider */}
+        <div className="w-px h-6 bg-slate-200 mx-1" />
+        
+        {/* All Time Toggle - same size as arrows */}
+        <button
+          onClick={() => setCurrentMonth(isAllTime ? new Date() : null)}
+          className={`px-3 py-2.5 rounded-lg text-xs font-bold transition-all tap-scale ${
+            isAllTime 
+              ? 'bg-slate-800 text-white font-semibold ' 
+              : 'text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          All
         </button>
       </div>
 
-      {/* Transactions List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Header with PDF Download and Share */}
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{t('recent.transactions')}</h3>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleShare}
-              disabled={!data?.transactions?.length}
-              className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-              title="Share via WhatsApp"
-            >
-              <Share2 className="w-4 h-4" />
-              <span className="text-xs font-medium hidden sm:inline">Share</span>
-            </button>
-            <button 
-              onClick={handleDownloadPDF}
-              disabled={downloading || !data?.transactions?.length}
-              className="text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-              title="Download PDF"
-            >
-              {downloading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Download className="w-4 h-4" />
-              )}
-              <span className="text-xs font-medium hidden sm:inline">PDF</span>
-            </button>
-          </div>
-        </div>
+      {/* Filter Tabs */}
+      <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
+        {[
+          { key: 'all', label: t('all'), count: data?.transactions?.length || 0 },
+          { key: 'milk', label: t('milk'), icon: Milk, count: data?.transactions?.filter((t: any) => t.type === 'MILK').length || 0 },
+          { key: 'payment', label: t('payment'), icon: IndianRupee, count: data?.transactions?.filter((t: any) => t.type === 'PAYMENT').length || 0 },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setTransactionFilter(tab.key as any)}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+              transactionFilter === tab.key
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {tab.icon && <tab.icon className="w-3.5 h-3.5" />}
+            {tab.label}
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+              transactionFilter === tab.key 
+                ? 'bg-slate-200 text-slate-600' 
+                : 'bg-slate-200/70 text-slate-500'
+            }`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
 
-        {/* Transaction Type Filter Tabs */}
-        <div className="px-4 py-3 border-b border-slate-100 bg-white">
-          <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
-            <button
-              onClick={() => setTransactionFilter('all')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                transactionFilter === 'all'
-                  ? 'bg-white text-slate-800 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {t('all')}
-              {data?.transactions && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  transactionFilter === 'all' ? 'bg-slate-200 text-slate-600' : 'bg-slate-200/70 text-slate-500'
-                }`}>
-                  {data.transactions.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setTransactionFilter('milk')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                transactionFilter === 'milk'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <Milk className="w-3.5 h-3.5" />
-              {t('milk')}
-              {data?.transactions && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  transactionFilter === 'milk' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200/70 text-slate-500'
-                }`}>
-                  {data.transactions.filter((t: any) => t.type === 'MILK').length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setTransactionFilter('payment')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                transactionFilter === 'payment'
-                  ? 'bg-white text-emerald-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <IndianRupee className="w-3.5 h-3.5" />
-              {t('payment')}
-              {data?.transactions && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  transactionFilter === 'payment' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200/70 text-slate-500'
-                }`}>
-                  {data.transactions.filter((t: any) => t.type === 'PAYMENT').length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-
+      {/* Transactions Timeline */}
+      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
         {loading ? (
-             <div className="p-12 flex flex-col items-center justify-center text-slate-400">
-               <div className="w-8 h-8 border-4 border-slate-200 border-t-indigo-500 rounded-full animate-spin mb-3" />
-               <p className="text-xs font-medium uppercase tracking-widest">{t('loading')}</p>
-             </div>
-        ) : filteredTransactions.length === 0 ? (
-             <div className="p-12 text-center text-slate-400 text-sm">
-               {transactionFilter === 'all' ? t('no.data') : `No ${transactionFilter} transactions found`}
-             </div>
+          <div className="p-8 flex flex-col items-center justify-center text-slate-400">
+            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+            <p className="text-xs">{t('loading')}</p>
+          </div>
+        ) : Object.keys(groupedTransactions).length === 0 ? (
+          <div className="p-8 text-center text-slate-400">
+            <p className="text-sm">{t('no.data')}</p>
+          </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {filteredTransactions.slice().reverse().map((row: any, idx: number) => (
-              <div key={idx} className="p-5 hover:bg-slate-50 transition-colors group">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                      row.type === 'MILK' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'
-                    }`}>
-                      {row.type === 'MILK' ? 'M' : '₹'}
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800 text-sm">
-                        {row.type === 'MILK' ? `${t('milk.supply')} (${row.details?.shift === 'M' ? t('morning') : t('evening')})` : t('payment.received')}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">
-                        {new Date(row.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {row.type}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`font-bold text-sm ${
-                    row.credit > 0 ? 'text-emerald-600' : 'text-slate-800'
-                  }`}>
-                    {row.credit > 0 ? '+' : ''}{formatCurrency(row.credit || row.debit)}
-                  </span>
+            {Object.entries(groupedTransactions).map(([date, transactions]) => (
+              <div key={date}>
+                {/* Date Header */}
+                <div className="px-4 py-2 bg-slate-50/50 sticky top-0">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                    {formatDateLabel(date)}
+                  </p>
                 </div>
                 
-                <div className="pl-13 flex justify-between items-end">
-                  <div className="text-xs text-slate-500 leading-relaxed">
-                    {row.type === 'MILK' ? (
-                      <span className="bg-slate-100 px-2 py-1 rounded text-slate-600 font-medium">
-                        {row.details?.quantity_litre || 0}L @ {t('milk.fat')} {row.details?.fat || 0} / {t('milk.snf')} {row.details?.snf || 0}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 italic">via {row.description}</span>
-                    )}
+                {/* Transactions for this date */}
+                {transactions.map((row: any, idx: number) => (
+                  <div key={row.id || idx} className="px-4 py-4 flex items-center gap-4">
+                    {/* Icon */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      row.type === 'MILK' 
+                        ? row.details?.shift === 'M' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'
+                        : 'bg-emerald-50 text-emerald-600'
+                    }`}>
+                      {row.type === 'MILK' ? (
+                        row.details?.shift === 'M' ? <Sunrise className="w-5 h-5" /> : <Moon className="w-5 h-5" />
+                      ) : (
+                        <IndianRupee className="w-5 h-5" />
+                      )}
+                    </div>
+                    
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm">
+                        {row.type === 'MILK' 
+                          ? `${row.details?.shift === 'M' ? t('morning') : t('evening')} Collection`
+                          : t('payment.received')
+                        }
+                      </p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {row.type === 'MILK' 
+                          ? `${row.details?.quantity_litre || 0}L • Fat: ${row.details?.fat || '-'}%`
+                          : row.description
+                        }
+                      </p>
+                    </div>
+                    
+                    {/* Amount */}
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-bold text-sm ${
+                        row.credit > 0 ? 'text-emerald-600' : 'text-slate-800'
+                      }`}>
+                        {row.credit > 0 ? '+' : '-'}{formatCurrency(row.credit || row.debit)}
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        Bal: {formatCurrency(row.balance)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-300 uppercase tracking-wider mb-0.5">{t('balance')}</p>
-                    <p className="text-xs font-bold text-slate-600">{formatCurrency(row.balance)}</p>
-                  </div>
-                </div>
+                ))}
               </div>
             ))}
           </div>

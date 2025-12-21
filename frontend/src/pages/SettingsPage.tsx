@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { settingsApi, authApi, customerApi } from '../lib/api';
+import { useConfirm } from '../components/ui/ConfirmDialog';
+import { SkeletonForm } from '../components/ui/Skeleton';
 import { 
   Save, 
   Trash2, 
@@ -48,6 +50,7 @@ interface Customer {
 }
 
 export default function SettingsPage() {
+  const confirmDialog = useConfirm();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [rateCards, setRateCards] = useState<RateCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -126,7 +129,14 @@ export default function SettingsPage() {
   };
 
   const handleDeleteRateCard = async (id: number) => {
-    if (!confirm('Delete this rate card?')) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete Rate Card?',
+      message: 'This will permanently delete this rate card configuration.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
     try {
       await settingsApi.deleteRateCard(id);
       loadData();
@@ -208,8 +218,15 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-16 h-16 rounded-full border-4 border-blue-500/30 border-t-blue-500 animate-spin"></div>
+      <div className="space-y-6 animate-in fade-in">
+        <div>
+          <div className="skeleton h-8 w-32 mb-2" />
+          <div className="skeleton h-4 w-48" />
+        </div>
+        <div className="skeleton h-12 w-64 rounded-2xl" />
+        <div className="glass-card p-6">
+          <SkeletonForm />
+        </div>
       </div>
     );
   }

@@ -59,11 +59,16 @@ async function loadSettings() {
 /**
  * Calculate rate per litre based on fat, snf, and milk type
  * Uses rate_cards table for lookup, falls back to default rates in settings
- * Note: This is now a sync function that uses cached data for performance
+ * Note: This is now async to ensure cache is loaded
  */
-function calculateRate(milkType, fat, snf) {
+async function calculateRate(milkType, fat, snf) {
+    // Ensure cache is loaded
+    if (!rateCardsCache || Date.now() >= cacheExpiry) {
+        await loadRateCards();
+    }
+    
     // Try to find matching rate card from cache
-    if (rateCardsCache) {
+    if (rateCardsCache && rateCardsCache.length > 0) {
         const matchingCard = rateCardsCache.find(card => 
             card.milk_type === milkType &&
             (card.min_fat === null || fat >= card.min_fat) &&
@@ -74,7 +79,11 @@ function calculateRate(milkType, fat, snf) {
 
         if (matchingCard) {
             return matchingCard.rate_per_litre;
+        } else {
+            console.warn(`No matching rate card for ${milkType} Fat:${fat} SNF:${snf}. Available cards:`, rateCardsCache.length);
         }
+    } else {
+        console.warn('Rate cards cache is empty or not loaded');
     }
 
     // Fallback to default rates from settings cache (removed for strict mode)

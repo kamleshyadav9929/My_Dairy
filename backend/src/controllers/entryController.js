@@ -227,12 +227,27 @@ async function createEntry(req, res) {
         
         if (!amount) {
             if (!rate) {
-                rate = rateService.calculateRate(actualMilkType, fat || 4.0, snf || 8.5);
+                rate = await rateService.calculateRate(actualMilkType, fat || 4.0, snf || 8.5);
             }
+            
+            // CRITICAL: Reject entries with zero rate (no matching rate card)
+            if (!rate || rate <= 0) {
+                return res.status(400).json({ 
+                    error: `No rate card found for ${actualMilkType} milk with Fat: ${fat || 4.0}%, SNF: ${snf || 8.5}%. Please configure rate cards in Settings first.`
+                });
+            }
+            
             amount = rateService.calculateAmount(quantityLitre, rate);
         } else if (!rate && amount) {
             // Calculate rate from amount if not provided
             rate = amount / quantityLitre;
+        }
+        
+        // Final validation: Ensure amount is not zero
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ 
+                error: 'Cannot save entry with ₹0 amount. Please check rate card configuration.'
+            });
         }
 
         const { data: entry, error: insertError } = await supabase

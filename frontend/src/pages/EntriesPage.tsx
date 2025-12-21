@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import { entryApi, customerApi } from '../lib/api';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { useToast } from '../components/ui/Toast';
+import { useConfirm } from '../components/ui/ConfirmDialog';
+import { SkeletonTable } from '../components/ui/Skeleton';
 import { 
   Plus, 
   Edit, 
@@ -13,6 +16,8 @@ import {
   MoreVertical,
   MessageCircle,
   User,
+  Zap,
+  ZapOff,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -131,6 +136,7 @@ const ActionMenu = ({
 };
 
 export default function EntriesPage() {
+  const confirmDialog = useConfirm();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [dateFrom, setDateFrom] = useState(getLocalDate());
@@ -159,6 +165,21 @@ export default function EntriesPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [calculatedRate, setCalculatedRate] = useState<number>(0);
   const [calculatedAmount, setCalculatedAmount] = useState<number>(0);
+
+  /* Rapid Entry Mode - for high-volume data entry */
+  const [rapidModeEnabled, setRapidModeEnabled] = useState(false);
+  const [rapidFormData, setRapidFormData] = useState({
+    customerId: '',
+    quantityLitre: '',
+    fat: '',
+    snf: ''
+  });
+  const [rapidSaving, setRapidSaving] = useState(false);
+  const [rapidRate, setRapidRate] = useState(0);
+  const [rapidAmount, setRapidAmount] = useState(0);
+  const rapidCustomerRef = useRef<HTMLInputElement>(null);
+  const rapidQtyRef = useRef<HTMLInputElement>(null);
+  const { showToast, ToastContainer } = useToast();
 
   useEffect(() => {
     loadCustomers();
@@ -286,7 +307,16 @@ export default function EntriesPage() {
 
   const handleDelete = async (id: number) => {
     setMenuState(null);
-    if (!confirm('Are you sure you want to delete this entry?')) return;
+    
+    const confirmed = await confirmDialog({
+      title: 'Delete Entry?',
+      message: 'This will permanently delete this milk entry. This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger'
+    });
+    
+    if (!confirmed) return;
     
     try {
       await entryApi.delete(id);
@@ -309,6 +339,98 @@ export default function EntriesPage() {
     });
     setCalculatedRate(0);
     setCalculatedAmount(0);
+  };
+
+  // Rapid mode rate calculation
+  useEffect(() => {
+    if (!rapidModeEnabled) return;
+
+    const customer = customers.find(c => c.id.toString() === rapidFormData.customerId);
+    const qty = parseFloat(rapidFormData.quantityLitre) || 0;
+    const fat = parseFloat(rapidFormData.fat) || 0;
+    const snf = parseFloat(rapidFormData.snf) || 0;
+    const milkType = customer?.milk_type_default || 'COW';
+    
+    if (qty > 0) {
+      const rate = calculateRate(milkType, fat, snf);
+      setRapidRate(rate);
+      setRapidAmount(qty * rate);
+    } else {
+      setRapidRate(0);
+      setRapidAmount(0);
+    }
+  }, [rapidFormData, rapidModeEnabled, customers, calculateRate]);
+
+  // Rapid submit handler - saves entry without closing a modal
+  const handleRapidSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rapidSaving) return;
+    
+    const customer = customers.find(c => c.id.toString() === rapidFormData.customerId);
+    if (!customer) {
+      showToast('Please select a customer', 'error');
+      return;
+    }
+    
+    const qty = parseFloat(rapidFormData.quantityLitre);
+    if (!qty || qty <= 0) {
+      showToast('Please enter quantity', 'error');
+      rapidQtyRef.current?.focus();
+      return;
+    }
+
+    setRapidSaving(true);
+
+    try {
+      const data = {
+        customerId: parseInt(rapidFormData.customerId),
+        date: getLocalDate(),
+        shift: new Date().getHours() < 12 ? 'M' : 'E',
+        milkType: customer.milk_type_default || 'COW',
+        quantityLitre: qty,
+        fat: rapidFormData.fat ? parseFloat(rapidFormData.fat) : undefined,
+        snf: rapidFormData.snf ? parseFloat(rapidFormData.snf) : undefined
+      };
+
+      const response = await entryApi.create(data);
+      const newEntry = response.data.entry;
+      
+      // Prepend new entry to local state (no full reload)
+      if (newEntry) {
+        setEntries(prev => [{ 
+          ...newEntry, 
+          customer_name: customer.name,
+          amcu_customer_id: customer.amcu_customer_id
+        }, ...prev]);
+      } else {
+        // Fallback: reload entries if API doesn't return the created entry
+        loadEntries();
+      }
+      
+      // Show success toast
+      showToast(`✓ Saved: ${customer.name} - ${qty}L`, 'success');
+      
+      // Clear form (keep date/shift auto-set)
+      setRapidFormData({
+        customerId: '',
+        quantityLitre: '',
+        fat: '',
+        snf: ''
+      });
+      setRapidRate(0);
+      setRapidAmount(0);
+      
+      // Refocus customer input for next entry
+      setTimeout(() => {
+        rapidCustomerRef.current?.focus();
+      }, 50);
+      
+    } catch (error) {
+      console.error('Rapid save failed:', error);
+      showToast('Failed to save entry', 'error');
+    } finally {
+      setRapidSaving(false);
+    }
   };
 
   const handleWhatsApp = (entry: Entry) => {
@@ -370,6 +492,9 @@ Thank you! 🙏`;
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Toast Container for notifications */}
+      <ToastContainer />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -378,14 +503,159 @@ Thank you! 🙏`;
           </h1>
           <p className="text-slate-500 mt-1">Record and manage daily milk collections</p>
         </div>
-        <button
-          onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/25 font-medium"
-        >
-          <Plus className="w-5 h-5" />
-          <span>New Entry</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Rapid Mode Toggle */}
+          <button
+            onClick={() => setRapidModeEnabled(!rapidModeEnabled)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all font-medium ${
+              rapidModeEnabled
+                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/25'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+            }`}
+          >
+            {rapidModeEnabled ? <Zap className="w-5 h-5" /> : <ZapOff className="w-5 h-5" />}
+            <span className="hidden sm:inline">{rapidModeEnabled ? 'Rapid Mode' : 'Enable Rapid'}</span>
+          </button>
+          
+          {/* New Entry Button (Modal) */}
+          {!rapidModeEnabled && (
+            <button
+              onClick={() => { resetForm(); setShowModal(true); }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/25 font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span>New Entry</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Rapid Entry Inline Form */}
+      {rapidModeEnabled && (
+        <form 
+          onSubmit={handleRapidSubmit}
+          className="glass-card p-4 border-2 border-amber-200 bg-gradient-to-r from-amber-50/50 to-orange-50/50"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-5 h-5 text-amber-600" />
+            <span className="text-sm font-bold text-amber-700 uppercase tracking-wider">Rapid Entry Mode</span>
+            <span className="ml-auto text-xs text-slate-500">
+              {new Date().getHours() < 12 ? '☀️ Morning Shift' : '🌙 Evening Shift'} • {getLocalDate()}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+            {/* Customer Select */}
+            <div className="sm:col-span-4">
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Customer</label>
+              <Select
+                value={rapidFormData.customerId}
+                onChange={(val) => {
+                  setRapidFormData({ ...rapidFormData, customerId: val });
+                  // Auto-focus quantity after customer select
+                  setTimeout(() => rapidQtyRef.current?.focus(), 100);
+                }}
+                options={customerOptions}
+                placeholder="Select customer..."
+                searchable
+              />
+            </div>
+            
+            {/* Quantity */}
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Qty (L)</label>
+              <input
+                ref={rapidQtyRef}
+                type="number"
+                step="0.1"
+                min="0"
+                value={rapidFormData.quantityLitre}
+                onChange={(e) => setRapidFormData({ ...rapidFormData, quantityLitre: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRapidSubmit(e);
+                  }
+                }}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all font-bold text-lg"
+                placeholder="0.0"
+              />
+            </div>
+            
+            {/* Fat */}
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Fat %</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+                value={rapidFormData.fat}
+                onChange={(e) => setRapidFormData({ ...rapidFormData, fat: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRapidSubmit(e);
+                  }
+                }}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                placeholder="0.0"
+              />
+            </div>
+            
+            {/* SNF */}
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-slate-500 mb-1 block">SNF %</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="15"
+                value={rapidFormData.snf}
+                onChange={(e) => setRapidFormData({ ...rapidFormData, snf: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleRapidSubmit(e);
+                  }
+                }}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
+                placeholder="0.0"
+              />
+            </div>
+            
+            {/* Submit Button */}
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={rapidSaving || !rapidFormData.customerId || !rapidFormData.quantityLitre}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl transition-all font-bold shadow-lg shadow-emerald-500/25"
+              >
+                {rapidSaving ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5" />
+                    Save
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* Live Rate Preview */}
+          {rapidFormData.customerId && parseFloat(rapidFormData.quantityLitre) > 0 && (
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              <span className="text-slate-500">
+                Rate: <span className="font-bold text-slate-700">₹{rapidRate.toFixed(2)}/L</span>
+              </span>
+              <span className="text-emerald-600 font-bold">
+                Amount: ₹{rapidAmount.toFixed(0)}
+              </span>
+            </div>
+          )}
+        </form>
+      )}
 
       {/* Filters & Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -439,8 +709,8 @@ Thank you! 🙏`;
       {/* Content */}
       <div className="glass-card overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+          <div className="p-4">
+            <SkeletonTable rows={8} cols={6} />
           </div>
         ) : entries.length === 0 ? (
           <div className="text-center py-20 px-6">

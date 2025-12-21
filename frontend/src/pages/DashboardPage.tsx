@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { entryApi, customerApi, paymentApi } from '../lib/api';
+import { 
+  subscribeToMilkEntries, 
+  subscribeToPayments, 
+  subscribeToCustomers, 
+  unsubscribeChannel, 
+  isRealtimeAvailable
+} from '../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
+import { SkeletonStats, SkeletonChart, SkeletonTable } from '../components/ui/Skeleton';
 import { 
   Milk, 
   Users, 
@@ -12,6 +21,8 @@ import {
   ArrowRight,
   RefreshCw,
   Award,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 
@@ -54,15 +65,58 @@ export default function DashboardPage() {
   const [chartView, setChartView] = useState<'weekly' | 'monthly'>('weekly');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  
+  // Refs to hold subscription channels
+  const entriesChannelRef = useRef<RealtimeChannel | null>(null);
+  const paymentsChannelRef = useRef<RealtimeChannel | null>(null);
+  const customersChannelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
+    // Initial data load
     loadDashboardData();
-    const interval = setInterval(loadDashboardData, 30000);
+    
+    // Setup focus listener for when user returns to tab
     const handleFocus = () => loadDashboardData();
     window.addEventListener('focus', handleFocus);
+    
+    // Setup Supabase Realtime subscriptions (push-based, no polling!)
+    if (isRealtimeAvailable()) {
+      // Subscribe to milk_entries changes
+      entriesChannelRef.current = subscribeToMilkEntries(() => {
+        console.log('[Realtime] milk_entries changed, refreshing dashboard...');
+        loadDashboardData();
+      });
+      
+      // Subscribe to payments changes
+      paymentsChannelRef.current = subscribeToPayments(() => {
+        console.log('[Realtime] payments changed, refreshing dashboard...');
+        loadDashboardData();
+      });
+      
+      // Subscribe to customers changes
+      customersChannelRef.current = subscribeToCustomers(() => {
+        console.log('[Realtime] customers changed, refreshing dashboard...');
+        loadDashboardData();
+      });
+      
+      setIsRealtimeConnected(true);
+    } else {
+      // Fallback to polling ONLY if realtime is not available
+      console.warn('[Realtime] Not configured, falling back to 30s polling...');
+      const interval = setInterval(loadDashboardData, 30000);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('focus', handleFocus);
+      };
+    }
+    
+    // Cleanup subscriptions on unmount
     return () => {
-      clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
+      unsubscribeChannel(entriesChannelRef.current);
+      unsubscribeChannel(paymentsChannelRef.current);
+      unsubscribeChannel(customersChannelRef.current);
     };
   }, []);
 
@@ -144,11 +198,58 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-100px)]">
-        <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-slate-400 font-medium animate-pulse">Loading dashboard...</p>
+      <div className="space-y-8 pb-10 animate-in fade-in">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
+          <div>
+            <div className="skeleton h-8 w-32 mb-2" />
+            <div className="skeleton h-4 w-48" />
+          </div>
+          <div className="skeleton h-10 w-24 rounded-xl" />
         </div>
+        
+        {/* Quick Actions Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-card p-6">
+              <div className="flex items-center gap-4">
+                <div className="skeleton w-12 h-12 rounded-xl" />
+                <div>
+                  <div className="skeleton h-4 w-20 mb-2" />
+                  <div className="skeleton h-3 w-28" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Stats Skeleton */}
+        <SkeletonStats count={4} />
+        
+        {/* Main Content Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <SkeletonChart height={300} />
+          </div>
+          <div className="glass-card p-6">
+            <div className="skeleton h-6 w-32 mb-4" />
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <div className="skeleton w-10 h-10 rounded-full" />
+                  <div className="flex-1">
+                    <div className="skeleton h-4 w-24 mb-1" />
+                    <div className="skeleton h-3 w-16" />
+                  </div>
+                  <div className="skeleton h-4 w-12" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Recent Entries Skeleton */}
+        <SkeletonTable rows={5} cols={6} />
       </div>
     );
   }
@@ -172,10 +273,19 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50/50 border border-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            System Active
-          </div>
+          {isRealtimeConnected ? (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50/50 border border-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
+              <Wifi className="w-3.5 h-3.5" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Sync
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50/50 border border-amber-100 text-amber-700 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
+              <WifiOff className="w-3.5 h-3.5" />
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              Polling
+            </div>
+          )}
           <button 
             onClick={loadDashboardData}
             disabled={isRefreshing}

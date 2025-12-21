@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../lib/api';
-import { Milk, Eye, EyeOff, Loader2, ShieldCheck, UserCircle, KeyRound, ArrowLeft, CheckCircle, ArrowRight } from 'lucide-react';
+import { Milk, Eye, EyeOff, Loader2, UserCircle, KeyRound, ArrowLeft, CheckCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const { user, login, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(true);
+  // Hidden admin access: tap logo 3 times to reveal admin toggle
+  const [logoClickCount, setLogoClickCount] = useState(0);
+  const [showAdminToggle, setShowAdminToggle] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -62,12 +65,7 @@ export default function LoginPage() {
 
     try {
       await login(username, password, isAdmin, rememberMe);
-      
-      if (isAdmin) {
-        navigate('/', { replace: true });
-      } else {
-        navigate('/customer/dashboard', { replace: true });
-      }
+      navigate(isAdmin ? '/' : '/customer/dashboard', { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -182,41 +180,63 @@ export default function LoginPage() {
     <div className={`min-h-screen min-h-[100dvh] flex items-start sm:items-center justify-center px-4 bg-slate-50 overflow-auto ${keyboardVisible ? 'pt-4 pb-8' : 'py-8 sm:py-4'}`}>
       <div className="w-full max-w-sm">
         {/* Logo Section - Hide when keyboard is visible on mobile */}
+        {/* Hidden admin access: tap logo 3 times to reveal admin toggle */}
         <div className={`text-center mb-6 transition-all duration-200 ${keyboardVisible ? 'hidden sm:block' : ''}`}>
-          <img src="/logo.png" alt="My Dairy" className="w-16 h-16 rounded-full object-cover mx-auto mb-3" />
+          <img 
+            src="/logo.png" 
+            alt="My Dairy" 
+            className="w-16 h-16 rounded-full object-cover mx-auto mb-3 cursor-pointer select-none" 
+            onClick={() => {
+              if (showAdminToggle) return; // Already revealed
+              const newCount = logoClickCount + 1;
+              setLogoClickCount(newCount);
+              if (newCount >= 3) {
+                setShowAdminToggle(true); // Persist the toggle visibility
+              }
+              // Reset click count after 2 seconds (only for detecting the 3 taps)
+              setTimeout(() => setLogoClickCount(0), 2000);
+            }}
+          />
           <h1 className="text-2xl font-bold text-slate-900">My Dairy</h1>
           <p className="text-slate-500 mt-1 text-sm">Smart Milk Collection System</p>
         </div>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 p-6">
-          {/* Role Selector */}
-          <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl mb-5">
-            <button
-              type="button"
-              onClick={() => { setIsAdmin(true); setError(''); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
-                isAdmin
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => { setIsAdmin(false); setError(''); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
-                !isAdmin
-                  ? 'bg-white text-emerald-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <UserCircle className="w-4 h-4" />
-              Customer
-            </button>
-          </div>
+          {/* Role Selector - Stays visible once activated */}
+          {showAdminToggle ? (
+            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl mb-5 animate-in fade-in duration-300">
+              <button
+                type="button"
+                onClick={() => { setIsAdmin(true); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                  isAdmin
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsAdmin(false); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                  !isAdmin
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <UserCircle className="w-4 h-4" />
+                Customer
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 mb-5 py-2.5 px-4 bg-emerald-50 rounded-xl border border-emerald-100">
+              <UserCircle className="w-5 h-5 text-emerald-600" />
+              <span className="text-sm font-semibold text-emerald-700">Farmer Login</span>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-center gap-2">
