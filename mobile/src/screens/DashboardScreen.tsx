@@ -13,19 +13,22 @@ export default function DashboardScreen() {
   const [todayCollection, setTodayCollection] = useState<any>(null);
   const [trends, setTrends] = useState<any[]>([]);
   const [passbook, setPassbook] = useState<any>(null);
+  const [recentPayments, setRecentPayments] = useState<any[]>([]);
 
   const fetchData = async () => {
     try {
-      const [summaryRes, todayRes, trendsRes, passbookRes] = await Promise.all([
+      const [summaryRes, todayRes, trendsRes, passbookRes, paymentsRes] = await Promise.all([
         customerPortalApi.getDashboard(),
         customerPortalApi.getTodayCollection(),
         customerPortalApi.getCollectionTrends(7),
         customerPortalApi.getPassbook({ from: '2020-01-01', to: new Date().toISOString().split('T')[0] }),
+        customerPortalApi.getPayments({ limit: 3 }),
       ]);
       setDashboardData(summaryRes.data);
       setTodayCollection(todayRes.data);
       setTrends(trendsRes.data || []);
       setPassbook(passbookRes.data.summary || {});
+      setRecentPayments(paymentsRes.data.payments || []);
     } catch (error: any) {
       console.error('Fetch error:', error.response?.data || error.message);
     }
@@ -49,6 +52,10 @@ export default function DashboardScreen() {
   };
 
   const todayDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+  // Fix: API returns 'qty' not 'quantity_litre'
+  const morningQty = todayCollection?.morning?.qty || todayCollection?.morning?.quantity_litre || 0;
+  const eveningQty = todayCollection?.evening?.qty || todayCollection?.evening?.quantity_litre || 0;
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-100">
@@ -78,7 +85,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Overview Card - Keeping your existing style */}
+        {/* Overview Card */}
         <View className="mx-5 bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
           <View className="flex-row items-center justify-between mb-3">
             <View className="flex-row items-center">
@@ -143,7 +150,7 @@ export default function DashboardScreen() {
             </View>
             <View className="items-end">
               <Text className="text-neutral-900 font-bold">
-                {todayCollection?.morning?.quantity_litre?.toFixed(1) || '—'} L
+                {morningQty > 0 ? `${morningQty.toFixed(1)} L` : '— L'}
               </Text>
               <Text className="text-emerald-600 text-sm font-semibold">
                 {formatCurrency(todayCollection?.morning?.amount || 0)}
@@ -167,7 +174,7 @@ export default function DashboardScreen() {
             </View>
             <View className="items-end">
               <Text className="text-neutral-900 font-bold">
-                {todayCollection?.evening?.quantity_litre?.toFixed(1) || '—'} L
+                {eveningQty > 0 ? `${eveningQty.toFixed(1)} L` : '— L'}
               </Text>
               <Text className="text-emerald-600 text-sm font-semibold">
                 {formatCurrency(todayCollection?.evening?.amount || 0)}
@@ -177,7 +184,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Collection Trends Card */}
-        <View className="mx-5 mt-4 bg-white rounded-2xl p-5 mb-8">
+        <View className="mx-5 mt-4 bg-white rounded-2xl p-5">
           <View className="flex-row items-center justify-between mb-4">
             <View>
               <Text className="text-neutral-900 text-base font-bold">Collection Trends</Text>
@@ -221,6 +228,40 @@ export default function DashboardScreen() {
               })}
             </View>
           </View>
+        </View>
+
+        {/* Recent Payments Card */}
+        <View className="mx-5 mt-4 bg-white rounded-2xl p-5 mb-8">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-neutral-900 text-base font-bold">Recent Payments</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Passbook')}>
+              <Text className="text-indigo-600 text-xs font-medium">See All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {recentPayments.length === 0 ? (
+            <View className="items-center py-4">
+              <Ionicons name="card-outline" size={32} color="#d4d4d4" />
+              <Text className="text-neutral-400 text-xs mt-2">No recent payments</Text>
+            </View>
+          ) : (
+            recentPayments.map((payment: any, idx: number) => (
+              <View key={payment.id || idx} className={`flex-row items-center ${idx > 0 ? 'mt-4 pt-4 border-t border-neutral-100' : ''}`}>
+                <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
+                  <Ionicons name="card" size={18} color="#10b981" />
+                </View>
+                <View className="flex-1 ml-3">
+                  <Text className="text-neutral-900 font-medium">Payment Received</Text>
+                  <Text className="text-neutral-400 text-xs mt-0.5">
+                    {new Date(payment.payment_date || payment.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </Text>
+                </View>
+                <Text className="text-emerald-600 font-bold">
+                  +{formatCurrency(payment.amount)}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
 
         <View className="h-24" />
