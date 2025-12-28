@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView, StatusBar, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { customerPortalApi } from '../lib/api';
-import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Notification {
   id: string;
@@ -38,116 +38,98 @@ export default function AlertsScreen() {
   }, []);
 
   const formatTimeAgo = (dateStr: string) => {
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMs / 3600000);
+    const days = Math.floor(diffMs / 86400000);
     
-    if (diffInMins < 60) return `${diffInMins}m`;
-    if (diffInHours < 24) return `${diffInHours}h`;
-    if (diffInDays < 7) return `${diffInDays}d`;
-    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-  };
-
-  const getEmoji = (type: string) => {
-    if (type === 'PAYMENT' || type === 'payment') return '💰';
-    if (type === 'MILK' || type === 'entry') return '🥛';
-    return '🔔';
+    if (mins < 60) return `${mins}m`;
+    if (hours < 24) return `${hours}h`;
+    if (days < 7) return `${days}d`;
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <View className="flex-1 bg-[#0a0a0f]">
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a0f" />
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      {/* Ambient Effects */}
-      <View className="absolute top-40 right-0 w-80 h-80 rounded-full opacity-15" style={{ backgroundColor: '#f59e0b', transform: [{ translateX: 120 }] }} />
-      
-      <SafeAreaView className="flex-1">
-        {/* Header */}
-        <View className="px-6 pt-4 pb-6">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-white text-2xl font-bold">🔔 Notifications</Text>
-              {unreadCount > 0 && (
-                <Text className="text-indigo-400 text-sm mt-1">{unreadCount} unread</Text>
-              )}
-            </View>
-          </View>
-        </View>
-
-        <ScrollView 
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
-        >
-          <View className="px-6">
-            {loading ? (
-              <View className="items-center justify-center py-20">
-                <ActivityIndicator size="large" color="#6366f1" />
-              </View>
-            ) : notifications.length === 0 ? (
-              <View className="items-center justify-center py-20">
-                <Text className="text-6xl mb-4">✨</Text>
-                <Text className="text-white font-bold text-lg">All caught up!</Text>
-                <Text className="text-white/40 mt-2 text-center">No new notifications</Text>
-              </View>
-            ) : (
-              <>
-                <Text className="text-white/30 text-xs font-bold uppercase tracking-widest mb-4">Recent</Text>
-                
-                {notifications.map((item) => (
-                  <View 
-                    key={item.id} 
-                    className="mb-3 rounded-2xl overflow-hidden"
-                    style={{ backgroundColor: item.is_read ? 'rgba(255,255,255,0.03)' : 'rgba(99, 102, 241, 0.08)' }}
-                  >
-                    <BlurView intensity={10} tint="dark" className="p-4">
-                      <View className="flex-row items-start">
-                        <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center">
-                          <Text className="text-2xl">{getEmoji(item.type)}</Text>
-                        </View>
-                        
-                        <View className="flex-1 ml-4">
-                          <View className="flex-row items-center justify-between mb-1">
-                            <Text className="text-white font-bold text-sm flex-1" numberOfLines={1}>
-                              {item.title}
-                            </Text>
-                            <View className="flex-row items-center ml-2">
-                              <Text className="text-white/30 text-xs">⏱ {formatTimeAgo(item.created_at)}</Text>
-                            </View>
-                          </View>
-                          
-                          <Text className="text-white/50 text-sm" numberOfLines={2}>
-                            {item.message}
-                          </Text>
-                          
-                          {item.amount && (
-                            <View className="mt-3 self-start px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                              <Text className="text-emerald-400 font-bold text-sm">
-                                ₹{item.amount.toLocaleString('en-IN')}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        
-                        {!item.is_read && (
-                          <View className="w-2.5 h-2.5 bg-indigo-500 rounded-full ml-2 mt-1" />
-                        )}
-                      </View>
-                    </BlurView>
-                  </View>
-                ))}
-              </>
+      {/* Header */}
+      <View className="px-5 pt-4 pb-4 border-b border-neutral-100">
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text className="text-neutral-900 text-xl font-semibold">Notifications</Text>
+            {unreadCount > 0 && (
+              <Text className="text-indigo-600 text-xs mt-0.5">{unreadCount} new</Text>
             )}
           </View>
-          
-          <View className="h-28" />
-        </ScrollView>
-      </SafeAreaView>
-    </View>
+          <TouchableOpacity className="w-9 h-9 rounded-full bg-neutral-100 items-center justify-center">
+            <Ionicons name="settings-outline" size={16} color="#525252" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView 
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />}
+      >
+        <View className="px-5 py-4">
+          {loading ? (
+            <ActivityIndicator size="large" color="#171717" className="mt-10" />
+          ) : notifications.length === 0 ? (
+            <View className="items-center py-20">
+              <Ionicons name="notifications-off-outline" size={48} color="#d4d4d4" />
+              <Text className="text-neutral-900 font-semibold text-lg mt-4">All caught up</Text>
+              <Text className="text-neutral-400 text-sm mt-1">No notifications right now</Text>
+            </View>
+          ) : (
+            notifications.map((item, idx) => {
+              const isMilk = item.type === 'MILK' || item.type === 'entry';
+              return (
+                <View 
+                  key={item.id} 
+                  className={`py-4 ${idx !== 0 ? 'border-t border-neutral-100' : ''}`}
+                >
+                  <View className="flex-row items-start">
+                    <View className={`w-10 h-10 rounded-full items-center justify-center ${isMilk ? 'bg-indigo-50' : 'bg-emerald-50'}`}>
+                      <Ionicons name={isMilk ? 'water' : 'card'} size={18} color={isMilk ? '#4f46e5' : '#10b981'} />
+                    </View>
+                    
+                    <View className="flex-1 ml-3">
+                      <View className="flex-row items-center justify-between">
+                        <Text className="text-neutral-900 font-medium text-sm flex-1" numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text className="text-neutral-400 text-[10px] ml-2">{formatTimeAgo(item.created_at)}</Text>
+                      </View>
+                      
+                      <Text className="text-neutral-500 text-xs mt-1 leading-4" numberOfLines={2}>
+                        {item.message}
+                      </Text>
+                      
+                      {item.amount && (
+                        <View className="mt-2 self-start bg-emerald-50 px-2.5 py-1 rounded-md">
+                          <Text className="text-emerald-700 text-xs font-semibold">
+                            ₹{item.amount.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    
+                    {!item.is_read && (
+                      <View className="w-2 h-2 bg-indigo-500 rounded-full ml-2 mt-1.5" />
+                    )}
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </View>
+        
+        <View className="h-24" />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
