@@ -18,12 +18,17 @@ const api = axios.create({
 let authToken: string | null = null;
 
 export const setAuthToken = (token: string | null) => {
+  console.log('🔐 setAuthToken called:', token ? `${token.substring(0, 20)}...` : 'null');
   authToken = token;
 };
 
 api.interceptors.request.use((config) => {
+  console.log(`📡 API Request: ${config.method?.toUpperCase()} ${config.url}`);
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
+    console.log('✅ Token attached to request');
+  } else {
+    console.log('⚠️ No token available for request');
   }
   return config;
 });

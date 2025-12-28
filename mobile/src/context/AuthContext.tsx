@@ -39,12 +39,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (userData: any, token: string) => {
     try {
+      console.log('👤 Login called. Saving token...');
       await SecureStore.setItemAsync(TOKEN_KEY, token);
       await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData));
       setAuthToken(token);
       setUser(userData);
+      console.log('✅ Login complete. User:', userData.name);
     } catch (error) {
-      console.error('Failed to save auth:', error);
+      console.error('❌ Failed to save auth:', error);
     }
   };
 
