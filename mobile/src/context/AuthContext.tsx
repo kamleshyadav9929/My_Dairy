@@ -19,34 +19,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // TEMP: Force clear cache once to fix stale token
-    const forceLogout = async () => {
-      try {
-        console.log('🔄 Clearing cached credentials to fix stale token...');
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        await SecureStore.deleteItemAsync(USER_KEY);
-        setAuthToken(null);
-        setUser(null);
-        console.log('✅ Cache cleared. Please log in again.');
-      } catch (e) {
-        console.error('Clear cache error:', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    forceLogout();
+    loadStoredAuth();
   }, []);
+
+  const loadStoredAuth = async () => {
+    try {
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const userData = await SecureStore.getItemAsync(USER_KEY);
+      
+      if (token && userData) {
+        setAuthToken(token);
+        setUser(JSON.parse(userData));
+        console.log('✅ Restored login session');
+      }
+    } catch (error) {
+      console.error('Error loading auth:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (userData: any, token: string) => {
     try {
-      console.log('👤 Login called. Saving token...');
       await SecureStore.setItemAsync(TOKEN_KEY, token);
       await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData));
       setAuthToken(token);
       setUser(userData);
-      console.log('✅ Login complete. User:', userData.name);
+      console.log('✅ Login complete:', userData.name);
     } catch (error) {
-      console.error('❌ Failed to save auth:', error);
+      console.error('Failed to save auth:', error);
     }
   };
 
@@ -73,4 +74,3 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
-

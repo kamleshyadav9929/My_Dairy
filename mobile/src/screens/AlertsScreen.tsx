@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { customerPortalApi } from '../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { useTheme } from '../context/ThemeContext';
+import { useNetwork } from '../context/NetworkContext';
+import { cacheService } from '../lib/cacheService';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Notification {
@@ -18,30 +21,41 @@ interface Notification {
 export default function AlertsScreen() {
   const { t } = useI18n();
   const { colors, isDark } = useTheme();
+  const { isConnected } = useNetwork();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const loadData = async () => {
     try {
-      const res = await customerPortalApi.getNotifications();
-      setNotifications(res.data.notifications || []);
+      if (isConnected) {
+        const res = await customerPortalApi.getNotifications();
+        const data = res.data.notifications || [];
+        setNotifications(data);
+        await cacheService.saveNotifications(data);
+      } else {
+        const cached = await cacheService.getNotifications();
+        setNotifications(cached || []);
+      }
     } catch (error: any) {
       console.error('Notifications error:', error.response?.data || error.message);
+      const cached = await cacheService.getNotifications();
+      setNotifications(cached || []);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [isConnected]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadData();
-  }, []);
+  }, [isConnected]);
 
   const formatTimeAgo = (dateStr: string) => {
+    if (!dateStr) return '';
     const now = new Date();
     const date = new Date(dateStr);
     const diffMs = now.getTime() - date.getTime();
@@ -55,10 +69,15 @@ export default function AlertsScreen() {
     return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
 
-  const formatCurrency = (val: number) => '₹' + Math.abs(val || 0).toLocaleString('en-IN');
+  const formatCurrency = (val: number) => {
+    if (!val) return '';
+    return '₹' + Math.abs(val).toLocaleString('en-IN');
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       
       {/* Header */}
@@ -66,7 +85,7 @@ export default function AlertsScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{t('alerts.title')}</Text>
           <View style={{ backgroundColor: colors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-            <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600' }}>{notifications.filter(n => !n.is_read).length}</Text>
+            <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600' }}>{unreadCount}</Text>
           </View>
         </View>
       </View>
@@ -92,9 +111,14 @@ export default function AlertsScreen() {
           <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 100 }}>
             {notifications.map((item, idx) => {
               const isMilk = item.type?.toLowerCase()?.includes('milk') || item.type?.toLowerCase()?.includes('entry');
+              const title = item.title || 'Notification';
+              const message = item.message || '';
+              const timeAgo = formatTimeAgo(item.created_at);
+              const amountText = item.amount ? formatCurrency(item.amount) : null;
+              
               return (
                 <View 
-                  key={item.id}
+                  key={item.id || idx}
                   style={{ 
                     flexDirection: 'row', 
                     alignItems: 'flex-start', 
@@ -118,17 +142,19 @@ export default function AlertsScreen() {
                   
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14, flex: 1 }}>{item.title}</Text>
+                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14, flex: 1 }}>{title}</Text>
                       {!item.is_read && (
                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginLeft: 8 }} />
                       )}
                     </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4, lineHeight: 18 }}>{item.message}</Text>
+                    {message ? (
+                      <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4, lineHeight: 18 }}>{message}</Text>
+                    ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{formatTimeAgo(item.created_at)}</Text>
-                      {item.amount && (
-                        <Text style={{ color: colors.success, fontWeight: '600', fontSize: 13 }}>{formatCurrency(item.amount)}</Text>
-                      )}
+                      {timeAgo ? <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{timeAgo}</Text> : <View />}
+                      {amountText ? (
+                        <Text style={{ color: colors.success, fontWeight: '600', fontSize: 13 }}>{amountText}</Text>
+                      ) : null}
                     </View>
                   </View>
                 </View>

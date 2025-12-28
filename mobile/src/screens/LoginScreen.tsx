@@ -3,12 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, Keyb
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { customerPortalApi } from '../lib/api';
+import { ForgotPasswordModal } from '../components/ForgotPasswordModal';
 
 export default function LoginScreen() {
   const [customerId, setCustomerId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -106,7 +108,7 @@ export default function LoginScreen() {
             </View>
 
             {/* Password Input */}
-            <View style={{ marginBottom: 32 }}>
+            <View style={{ marginBottom: 16 }}>
               <Text style={{ fontSize: 13, fontWeight: '500', color: '#525252', marginBottom: 8, marginLeft: 4 }}>
                 Password
               </Text>
@@ -137,6 +139,14 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            {/* Forgot Password Link */}
+            <TouchableOpacity 
+              onPress={() => setShowForgotPassword(true)}
+              style={{ alignSelf: 'flex-end', marginBottom: 24 }}
+            >
+              <Text style={{ color: '#4f46e5', fontSize: 13, fontWeight: '500' }}>Forgot Password?</Text>
+            </TouchableOpacity>
+
             {/* Login Button */}
             <TouchableOpacity 
               onPress={handleLogin}
@@ -156,16 +166,14 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
           </View>
-
-          {/* Footer */}
-          <View style={{ alignItems: 'center', marginTop: 32 }}>
-            <Text style={{ color: '#737373', fontSize: 14 }}>Don't have an account?</Text>
-            <TouchableOpacity style={{ marginTop: 4 }}>
-              <Text style={{ color: '#4f46e5', fontWeight: '600', fontSize: 14 }}>Contact Administrator</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        visible={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </KeyboardAvoidingView>
   );
 }

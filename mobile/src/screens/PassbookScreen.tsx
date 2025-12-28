@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, SafeAreaView, Alert, Share, StatusBar } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Share, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { customerPortalApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
