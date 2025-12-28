@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, SafeAreaView, Alert, Share, StatusBar } from 'react-native';
-import { ChevronRight, ChevronLeft, Download, Share2, CreditCard, Droplets, FileText, TrendingUp, TrendingDown } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, SafeAreaView, Alert, Share, StatusBar, Dimensions } from 'react-native';
 import { customerPortalApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { generatePassbookPDF } from '../lib/pdfUtils';
-import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 interface PassbookEntry {
   id: string;
@@ -29,7 +31,6 @@ export default function PassbookScreen() {
 
   const loadData = async () => {
     try {
-      console.log('Loading passbook data...');
       const fromDate = currentMonth 
         ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString().split('T')[0] 
         : '2020-01-01';
@@ -38,21 +39,17 @@ export default function PassbookScreen() {
         : new Date().toISOString().split('T')[0];
 
       const res = await customerPortalApi.getPassbook({ from: fromDate, to: toDate });
-      console.log('Passbook response:', res.data);
       setTransactions(res.data.transactions || []);
       setSummary(res.data.summary || {});
     } catch (error: any) {
-      console.error('Passbook load error:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('Passbook error:', error.response?.data || error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [currentMonth]);
+  useEffect(() => { loadData(); }, [currentMonth]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -69,13 +66,12 @@ export default function PassbookScreen() {
   const formatCurrency = (val: number) => '₹' + Math.abs(val || 0).toLocaleString('en-IN');
   const getDayMonth = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }).toUpperCase();
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
 
   const handleShare = async () => {
     if (!summary) return;
-    const message = `My Dairy Balance: ${formatCurrency(summary.balance)}`;
-    await Share.share({ message });
+    await Share.share({ message: `💰 My Dairy Balance: ${formatCurrency(summary.balance)}` });
   };
   
   const handleDownload = async () => {
@@ -83,39 +79,26 @@ export default function PassbookScreen() {
       Alert.alert('No Data', 'No transactions to export.');
       return;
     }
-    
     setDownloading(true);
     try {
-      const fromDate = currentMonth 
-        ? currentMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
-        : 'All Time';
-      const toDate = new Date().toLocaleDateString('en-IN');
-      
       await generatePassbookPDF({
-        customer: {
-          name: user.name || 'Customer',
-          amcuId: user.amcuId || user.id?.toString() || '-'
-        },
+        customer: { name: user.name || 'Customer', amcuId: user.amcuId || user.id?.toString() || '-' },
         entries: transactions.map(t => ({
           date: new Date(t.date).toLocaleDateString('en-IN'),
           type: t.type.toLowerCase(),
           description: t.description || (t.type === 'MILK' ? 'Milk Collection' : 'Payment'),
-          debit: t.debit || 0,
-          credit: t.credit || 0,
-          balance: t.balance || 0
+          debit: t.debit || 0, credit: t.credit || 0, balance: t.balance || 0
         })),
         summary: {
           totalLitres: summary.totalLitres || 0,
-          totalAmount: summary.totalMilkAmount || summary.totalAmount || 0,
+          totalAmount: summary.totalMilkAmount || 0,
           totalPayments: summary.totalPayments || 0,
           balance: summary.balance || 0
         },
-        period: { from: fromDate, to: toDate }
+        period: { from: currentMonth?.toLocaleDateString('en-IN') || 'All Time', to: new Date().toLocaleDateString('en-IN') }
       });
-      Alert.alert('Success', 'PDF generated and ready to share!');
     } catch (error) {
-      console.error('PDF Error:', error);
-      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+      Alert.alert('Error', 'Failed to generate PDF.');
     } finally {
       setDownloading(false);
     }
@@ -125,174 +108,157 @@ export default function PassbookScreen() {
   const paymentCount = transactions.filter(t => t.type.toLowerCase() === 'payment').length;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <StatusBar barStyle="light-content" backgroundColor="#1e293b" />
+    <View className="flex-1 bg-[#0a0a0f]">
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0f" />
       
-      {/* Hero Header with Balance */}
-      <LinearGradient
-        colors={['#1e293b', '#334155']}
-        className="px-6 pb-6 pt-4"
-      >
-        <Text className="text-slate-400 text-sm font-medium mb-1">Passbook</Text>
-        
-        <View className="flex-row items-end justify-between mb-6">
-          <View>
-            <Text className="text-slate-400 text-xs uppercase tracking-widest mb-1">Current Balance</Text>
-            <Text className="text-white text-4xl font-bold">{formatCurrency(summary?.balance)}</Text>
-          </View>
-          <View className="flex-row gap-2">
-            <TouchableOpacity 
-              onPress={handleShare} 
-              className="bg-white/10 w-12 h-12 rounded-xl items-center justify-center border border-white/10"
-            >
-              <Share2 size={20} color="white" {...({} as any)} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={handleDownload}
-              disabled={downloading}
-              className="bg-indigo-500 w-12 h-12 rounded-xl items-center justify-center"
-            >
-              {downloading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Download size={20} color="white" {...({} as any)} />
-              )}
-            </TouchableOpacity>
-          </View>
+      {/* Ambient Effects */}
+      <View className="absolute top-20 left-0 w-72 h-72 rounded-full opacity-20" style={{ backgroundColor: '#10b981', transform: [{ translateX: -100 }] }} />
+      <View className="absolute top-60 right-0 w-64 h-64 rounded-full opacity-15" style={{ backgroundColor: '#6366f1', transform: [{ translateX: 80 }] }} />
+      
+      <SafeAreaView className="flex-1">
+        {/* Header */}
+        <View className="px-6 pt-4 pb-4">
+          <Text className="text-white/40 text-sm font-medium">💳 Passbook</Text>
         </View>
 
-        {/* Quick Stats */}
-        <View className="flex-row gap-3">
-          <View className="flex-1 bg-white/10 rounded-xl p-4 border border-white/5">
-            <View className="flex-row items-center mb-2">
-              <TrendingUp size={14} color="#4ade80" {...({} as any)} />
-              <Text className="text-emerald-400 text-xs ml-1">Earned</Text>
-            </View>
-            <Text className="text-white font-bold text-lg">{formatCurrency(summary?.totalMilkAmount || 0)}</Text>
-          </View>
-          <View className="flex-1 bg-white/10 rounded-xl p-4 border border-white/5">
-            <View className="flex-row items-center mb-2">
-              <TrendingDown size={14} color="#f87171" {...({} as any)} />
-              <Text className="text-red-400 text-xs ml-1">Received</Text>
-            </View>
-            <Text className="text-white font-bold text-lg">{formatCurrency(summary?.totalPayments || 0)}</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      <ScrollView 
-        className="flex-1 -mt-2"
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />}
-      >
-        {/* Month Selector */}
-        <View className="mx-6 mt-4 mb-4 flex-row items-center justify-between bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
-          <TouchableOpacity 
-            onPress={() => setCurrentMonth(prev => {
-              if (!prev) return new Date();
-              const d = new Date(prev); d.setMonth(d.getMonth() - 1); return d;
-            })}
-            className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center"
-          >
-            <ChevronLeft size={20} color="#64748b" {...({} as any)} />
-          </TouchableOpacity>
-          
-          <Text className="text-slate-900 font-bold text-base">
-            {currentMonth ? currentMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : 'All Time'}
-          </Text>
-          
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity 
-              onPress={() => setCurrentMonth(prev => {
-                if (!prev) return null;
-                const d = new Date(prev); d.setMonth(d.getMonth() + 1); return d;
-              })}
-              className="w-10 h-10 bg-slate-50 rounded-xl items-center justify-center"
-            >
-              <ChevronRight size={20} color="#64748b" {...({} as any)} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => setCurrentMonth(currentMonth ? null : new Date())} 
-              className="bg-slate-900 px-4 py-2 rounded-xl"
-            >
-              <Text className="text-white text-xs font-bold">{currentMonth ? 'All' : 'This Month'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Filter Tabs */}
-        <View className="mx-6 mb-4 flex-row bg-slate-100 p-1.5 rounded-2xl">
-          {[
-            { key: 'all', label: 'All', count: transactions.length },
-            { key: 'milk', label: 'Milk', count: milkCount },
-            { key: 'payment', label: 'Payments', count: paymentCount }
-          ].map((f) => (
-            <TouchableOpacity 
-              key={f.key} 
-              onPress={() => setTransactionFilter(f.key as any)}
-              className={`flex-1 py-3 items-center justify-center rounded-xl ${transactionFilter === f.key ? 'bg-white shadow-sm' : ''}`}
-            >
-              <Text className={`text-xs font-bold ${transactionFilter === f.key ? 'text-slate-900' : 'text-slate-500'}`}>
-                {f.label} <Text className="text-slate-400">({f.count})</Text>
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Transactions List */}
-        <View className="px-6 pb-24">
-          {loading ? (
-            <ActivityIndicator size="large" color="#6366f1" className="mt-10" />
-          ) : reversedList.length === 0 ? (
-            <View className="items-center py-16">
-              <View className="w-16 h-16 bg-slate-100 rounded-2xl items-center justify-center mb-4">
-                <FileText size={32} color="#cbd5e1" {...({} as any)} />
+        {/* Balance Card */}
+        <View className="mx-6 rounded-3xl overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+          <BlurView intensity={25} tint="dark" className="p-6">
+            <View className="flex-row justify-between items-start mb-4">
+              <View>
+                <Text className="text-white/40 text-xs uppercase tracking-widest">Current Balance</Text>
+                <Text className="text-white text-4xl font-bold mt-1">{formatCurrency(summary?.balance)}</Text>
               </View>
-              <Text className="text-slate-400 font-medium">No transactions found</Text>
+              <View className="flex-row gap-2">
+                <TouchableOpacity 
+                  onPress={handleShare}
+                  className="w-11 h-11 rounded-xl bg-white/10 items-center justify-center border border-white/5"
+                >
+                  <Text className="text-lg">📤</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={handleDownload}
+                  disabled={downloading}
+                  className="w-11 h-11 rounded-xl bg-indigo-500/80 items-center justify-center"
+                >
+                  {downloading ? <ActivityIndicator size="small" color="white" /> : <Text className="text-lg">📄</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
-          ) : (
-            <View className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
-              {reversedList.map((item, idx) => {
+
+            <View className="flex-row gap-3 mt-2">
+              <View className="flex-1 bg-white/5 rounded-xl p-3 border border-white/5">
+                <Text className="text-emerald-400/80 text-xs">↗ Earned</Text>
+                <Text className="text-white font-bold mt-1">{formatCurrency(summary?.totalMilkAmount || 0)}</Text>
+              </View>
+              <View className="flex-1 bg-white/5 rounded-xl p-3 border border-white/5">
+                <Text className="text-cyan-400/80 text-xs">↙ Received</Text>
+                <Text className="text-white font-bold mt-1">{formatCurrency(summary?.totalPayments || 0)}</Text>
+              </View>
+            </View>
+          </BlurView>
+        </View>
+
+        <ScrollView 
+          className="flex-1 mt-4"
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+        >
+          {/* Month Selector */}
+          <View className="mx-6 mb-4">
+            <View className="flex-row items-center justify-between bg-white/5 p-2 rounded-2xl border border-white/5">
+              <TouchableOpacity 
+                onPress={() => setCurrentMonth(prev => {
+                  if (!prev) return new Date();
+                  const d = new Date(prev); d.setMonth(d.getMonth() - 1); return d;
+                })}
+                className="w-10 h-10 rounded-xl bg-white/10 items-center justify-center"
+              >
+                <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.6)" />
+              </TouchableOpacity>
+              
+              <Text className="text-white font-bold">
+                {currentMonth ? currentMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '📆 All Time'}
+              </Text>
+              
+              <View className="flex-row items-center gap-2">
+                <TouchableOpacity 
+                  onPress={() => setCurrentMonth(prev => {
+                    if (!prev) return null;
+                    const d = new Date(prev); d.setMonth(d.getMonth() + 1); return d;
+                  })}
+                  className="w-10 h-10 rounded-xl bg-white/10 items-center justify-center"
+                >
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.6)" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Filter Pills */}
+          <View className="mx-6 mb-4 flex-row bg-white/5 p-1.5 rounded-2xl border border-white/5">
+            {[
+              { key: 'all', label: '🔄 All', count: transactions.length },
+              { key: 'milk', label: '🥛 Milk', count: milkCount },
+              { key: 'payment', label: '💵 Payments', count: paymentCount }
+            ].map((f) => (
+              <TouchableOpacity 
+                key={f.key} 
+                onPress={() => setTransactionFilter(f.key as any)}
+                className={`flex-1 py-3 items-center rounded-xl ${transactionFilter === f.key ? 'bg-white/10' : ''}`}
+              >
+                <Text className={`text-xs font-bold ${transactionFilter === f.key ? 'text-white' : 'text-white/40'}`}>
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Transactions */}
+          <View className="px-6 pb-28">
+            {loading ? (
+              <ActivityIndicator size="large" color="#6366f1" className="mt-10" />
+            ) : reversedList.length === 0 ? (
+              <View className="items-center py-16">
+                <Text className="text-5xl mb-4">📭</Text>
+                <Text className="text-white/40 font-medium">No transactions found</Text>
+              </View>
+            ) : (
+              reversedList.map((item, idx) => {
                 const isMilk = item.type.toLowerCase() === 'milk';
                 return (
                   <View 
                     key={item.id} 
-                    className={`p-4 flex-row justify-between items-center ${idx !== 0 ? 'border-t border-slate-50' : ''}`}
+                    className="flex-row justify-between items-center py-4 border-b border-white/5"
                   >
                     <View className="flex-row items-center flex-1">
-                      <View className={`w-11 h-11 rounded-xl items-center justify-center ${isMilk ? 'bg-indigo-50' : 'bg-emerald-50'}`}>
-                        {isMilk ? (
-                          <Droplets size={20} color="#6366f1" {...({} as any)} />
-                        ) : (
-                          <CreditCard size={20} color="#10b981" {...({} as any)} />
-                        )}
+                      <View className={`w-12 h-12 rounded-2xl items-center justify-center ${isMilk ? 'bg-indigo-500/10' : 'bg-emerald-500/10'}`}>
+                        <Text className="text-xl">{isMilk ? '🥛' : '💰'}</Text>
                       </View>
-                      <View className="ml-3 flex-1">
-                        <Text className="text-slate-900 font-bold text-sm" numberOfLines={1}>
+                      <View className="ml-4 flex-1">
+                        <Text className="text-white font-bold text-sm">
                           {isMilk ? 'Milk Collection' : 'Payment Received'}
                         </Text>
-                        <Text className="text-slate-400 text-xs mt-0.5">
+                        <Text className="text-white/30 text-xs mt-0.5">
                           {isMilk && item.details 
-                            ? `${item.details.shift === 'M' ? 'Morning' : 'Evening'} • ${item.details.quantity_litre}L`
+                            ? `${item.details.shift === 'M' ? '🌅' : '🌆'} ${item.details.quantity_litre}L`
                             : item.description}
                         </Text>
                       </View>
                     </View>
                     <View className="items-end">
-                      <Text className={`font-bold text-base ${item.credit > 0 ? 'text-emerald-600' : 'text-slate-700'}`}>
+                      <Text className={`font-bold text-base ${item.credit > 0 ? 'text-emerald-400' : 'text-white'}`}>
                         {item.credit > 0 ? '+' : ''}{item.credit > 0 ? formatCurrency(item.credit) : formatCurrency(-item.debit)}
                       </Text>
-                      <Text className="text-slate-400 text-[10px] mt-0.5">
-                        {getDayMonth(item.date)} • Bal: {formatCurrency(item.balance)}
-                      </Text>
+                      <Text className="text-white/20 text-[10px] mt-0.5">{getDayMonth(item.date)}</Text>
                     </View>
                   </View>
                 );
-              })}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+              })
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
