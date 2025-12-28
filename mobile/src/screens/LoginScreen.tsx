@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
-import { Milk, Eye, EyeOff, User, Lock } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { customerPortalApi } from '../lib/api';
 
@@ -24,9 +24,7 @@ export default function LoginScreen() {
         password: password
       });
 
-      // API returns { token, customer } on success
       if (response.data.token && response.data.customer) {
-        // Map the response to expected format
         const user = {
           ...response.data.customer,
           customerId: response.data.customer.id,
@@ -49,82 +47,122 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-950"
+      style={{ flex: 1, backgroundColor: '#ffffff' }}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#020617" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
-      {/* Decorative background */}
-      <View className="absolute inset-0 overflow-hidden">
-        <View className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-        <View className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
-      </View>
-
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 px-6 pt-24 pb-10 justify-between">
-          {/* Header */}
-          <View className="items-center">
-            <View className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl items-center justify-center mb-6 shadow-lg">
-              <Milk color="white" size={40} {...({} as any)} />
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 80, paddingBottom: 40 }}>
+          {/* Logo/Header */}
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View style={{ 
+              width: 80, 
+              height: 80, 
+              backgroundColor: '#4f46e5', 
+              borderRadius: 24, 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              marginBottom: 24
+            }}>
+              <Ionicons name="water" size={40} color="#ffffff" />
             </View>
-            <Text className="text-3xl font-bold text-white mb-2">Welcome Back</Text>
-            <Text className="text-slate-400 text-center">
-              Login to your dairy account to view entries and payments
+            <Text style={{ fontSize: 28, fontWeight: '700', color: '#171717', marginBottom: 8 }}>
+              Welcome Back
+            </Text>
+            <Text style={{ fontSize: 14, color: '#737373', textAlign: 'center' }}>
+              Login to your dairy account{'\n'}to view entries and payments
             </Text>
           </View>
 
           {/* Form */}
-          <View className="mt-10">
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-slate-400 mb-2 px-1">Customer ID / Phone</Text>
-              <View className="flex-row items-center bg-slate-800 border border-slate-700 rounded-2xl px-4 h-14">
-                <User size={20} color="#64748b" {...({} as any)} />
+          <View>
+            {/* Customer ID Input */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#525252', marginBottom: 8, marginLeft: 4 }}>
+                Customer ID / Phone
+              </Text>
+              <View style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                backgroundColor: '#fafafa', 
+                borderWidth: 1, 
+                borderColor: '#e5e5e5', 
+                borderRadius: 16, 
+                paddingHorizontal: 16, 
+                height: 56 
+              }}>
+                <Ionicons name="person-outline" size={20} color="#737373" />
                 <TextInput
-                  className="flex-1 ml-3 text-white text-base"
+                  style={{ flex: 1, marginLeft: 12, fontSize: 16, color: '#171717' }}
                   placeholder="Enter your ID"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor="#a3a3a3"
                   value={customerId}
                   onChangeText={setCustomerId}
                   autoCapitalize="none"
+                  keyboardType="default"
                 />
               </View>
             </View>
 
-            <View className="mb-6">
-              <Text className="text-sm font-medium text-slate-400 mb-2 px-1">Password</Text>
-              <View className="flex-row items-center bg-slate-800 border border-slate-700 rounded-2xl px-4 h-14">
-                <Lock size={20} color="#64748b" {...({} as any)} />
+            {/* Password Input */}
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ fontSize: 13, fontWeight: '500', color: '#525252', marginBottom: 8, marginLeft: 4 }}>
+                Password
+              </Text>
+              <View style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                backgroundColor: '#fafafa', 
+                borderWidth: 1, 
+                borderColor: '#e5e5e5', 
+                borderRadius: 16, 
+                paddingHorizontal: 16, 
+                height: 56 
+              }}>
+                <Ionicons name="lock-closed-outline" size={20} color="#737373" />
                 <TextInput
-                  className="flex-1 ml-3 text-white text-base"
+                  style={{ flex: 1, marginLeft: 12, fontSize: 16, color: '#171717' }}
                   placeholder="Enter password"
-                  placeholderTextColor="#64748b"
+                  placeholderTextColor="#a3a3a3"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff size={20} color="#64748b" {...({} as any)} /> : <Eye size={20} color="#64748b" {...({} as any)} />}
+                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#737373" />
                 </TouchableOpacity>
               </View>
             </View>
 
+            {/* Login Button */}
             <TouchableOpacity 
-              className={`h-14 rounded-2xl items-center justify-center ${loading ? 'bg-blue-700' : 'bg-blue-600'}`}
               onPress={handleLogin}
               disabled={loading}
+              style={{ 
+                height: 56, 
+                borderRadius: 16, 
+                backgroundColor: loading ? '#6366f1' : '#4f46e5', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}
             >
               {loading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-white font-bold text-lg">Login</Text>
+                <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>Login</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Footer */}
-          <View className="mt-8 items-center">
-            <Text className="text-slate-500">Don't have an account?</Text>
-            <TouchableOpacity className="mt-1">
-              <Text className="text-blue-400 font-semibold">Contact Administrator</Text>
+          <View style={{ marginTop: 'auto', alignItems: 'center', paddingTop: 32 }}>
+            <Text style={{ color: '#737373', fontSize: 14 }}>Don't have an account?</Text>
+            <TouchableOpacity style={{ marginTop: 4 }}>
+              <Text style={{ color: '#4f46e5', fontWeight: '600', fontSize: 14 }}>Contact Administrator</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -9,10 +9,9 @@ export default function ProfileScreen() {
   const systemColorScheme = useColorScheme();
   
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [language, setLanguage] = useState('English');
+  const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
 
-  // Load settings on mount
   useEffect(() => {
     loadSettings();
   }, []);
@@ -24,7 +23,7 @@ export default function ProfileScreen() {
       const savedTheme = await AsyncStorage.getItem('theme');
       
       if (savedNotifications !== null) setNotificationsEnabled(savedNotifications === 'true');
-      if (savedLanguage) setLanguage(savedLanguage);
+      if (savedLanguage === 'hi' || savedLanguage === 'en') setLanguage(savedLanguage);
       if (savedTheme) setTheme(savedTheme as any);
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -34,42 +33,46 @@ export default function ProfileScreen() {
   const handleNotificationToggle = async (value: boolean) => {
     setNotificationsEnabled(value);
     await AsyncStorage.setItem('notifications_enabled', value.toString());
-    
-    if (value) {
-      Alert.alert('Notifications Enabled', 'You will receive push notifications for milk entries and payments.');
-    } else {
-      Alert.alert('Notifications Disabled', 'You will not receive push notifications.');
-    }
   };
 
   const handleLanguageChange = () => {
     Alert.alert(
-      'Select Language',
-      'Choose your preferred language',
+      'भाषा चुनें / Select Language',
+      '',
       [
-        { text: 'English', onPress: () => saveLanguage('English') },
-        { text: 'हिंदी (Hindi)', onPress: () => saveLanguage('Hindi') },
-        { text: 'मराठी (Marathi)', onPress: () => saveLanguage('Marathi') },
-        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'English', 
+          onPress: () => saveLanguage('en'),
+          style: language === 'en' ? 'default' : 'default'
+        },
+        { 
+          text: 'हिंदी (Hindi)', 
+          onPress: () => saveLanguage('hi'),
+          style: language === 'hi' ? 'default' : 'default'
+        },
+        { text: 'Cancel / रद्द करें', style: 'cancel' },
       ]
     );
   };
 
-  const saveLanguage = async (lang: string) => {
+  const saveLanguage = async (lang: 'en' | 'hi') => {
     setLanguage(lang);
     await AsyncStorage.setItem('language', lang);
-    Alert.alert('Language Changed', `Language set to ${lang}. App restart may be required for full effect.`);
+    Alert.alert(
+      lang === 'hi' ? 'भाषा बदली गई' : 'Language Changed', 
+      lang === 'hi' ? 'कृपया ऐप रीस्टार्ट करें' : 'Please restart the app for full effect.'
+    );
   };
 
   const handleThemeChange = () => {
     Alert.alert(
-      'Select Theme',
-      'Choose your preferred theme',
+      language === 'hi' ? 'थीम चुनें' : 'Select Theme',
+      '',
       [
-        { text: 'Light', onPress: () => saveTheme('light') },
-        { text: 'Dark', onPress: () => saveTheme('dark') },
-        { text: 'System Default', onPress: () => saveTheme('system') },
-        { text: 'Cancel', style: 'cancel' },
+        { text: language === 'hi' ? 'लाइट' : 'Light', onPress: () => saveTheme('light') },
+        { text: language === 'hi' ? 'डार्क' : 'Dark', onPress: () => saveTheme('dark') },
+        { text: language === 'hi' ? 'सिस्टम' : 'System Default', onPress: () => saveTheme('system') },
+        { text: language === 'hi' ? 'रद्द करें' : 'Cancel', style: 'cancel' },
       ]
     );
   };
@@ -77,19 +80,51 @@ export default function ProfileScreen() {
   const saveTheme = async (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
     await AsyncStorage.setItem('theme', newTheme);
-    Alert.alert('Theme Changed', `Theme set to ${newTheme === 'system' ? 'System Default' : newTheme}. App restart may be required.`);
   };
 
   const getThemeLabel = () => {
-    if (theme === 'system') return `System (${systemColorScheme === 'dark' ? 'Dark' : 'Light'})`;
-    return theme === 'dark' ? 'Dark' : 'Light';
+    const labels = {
+      en: { light: 'Light', dark: 'Dark', system: `System (${systemColorScheme === 'dark' ? 'Dark' : 'Light'})` },
+      hi: { light: 'लाइट', dark: 'डार्क', system: `सिस्टम (${systemColorScheme === 'dark' ? 'डार्क' : 'लाइट'})` }
+    };
+    return labels[language][theme];
   };
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: logout }
-    ]);
+    Alert.alert(
+      language === 'hi' ? 'लॉगआउट' : 'Logout', 
+      language === 'hi' ? 'क्या आप वाकई लॉगआउट करना चाहते हैं?' : 'Are you sure you want to logout?', 
+      [
+        { text: language === 'hi' ? 'रद्द करें' : 'Cancel', style: 'cancel' },
+        { text: language === 'hi' ? 'लॉगआउट' : 'Logout', style: 'destructive', onPress: logout }
+      ]
+    );
+  };
+
+  const t = (key: string) => {
+    const translations: any = {
+      en: {
+        'profile': 'Profile',
+        'settings': 'SETTINGS',
+        'push.notifications': 'Push Notifications',
+        'notifications.desc': 'Receive alerts for entries & payments',
+        'language': 'Language',
+        'theme': 'Theme',
+        'logout': 'Logout',
+        'version': 'My Dairy v1.0.0',
+      },
+      hi: {
+        'profile': 'प्रोफाइल',
+        'settings': 'सेटिंग्स',
+        'push.notifications': 'पुश नोटिफिकेशन',
+        'notifications.desc': 'एंट्री और भुगतान के लिए अलर्ट प्राप्त करें',
+        'language': 'भाषा',
+        'theme': 'थीम',
+        'logout': 'लॉगआउट',
+        'version': 'माय डेयरी v1.0.0',
+      }
+    };
+    return translations[language][key] || key;
   };
 
   return (
@@ -99,7 +134,7 @@ export default function ProfileScreen() {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' }}>
-          <Text style={{ color: '#171717', fontSize: 20, fontWeight: '600' }}>Profile</Text>
+          <Text style={{ color: '#171717', fontSize: 20, fontWeight: '600' }}>{t('profile')}</Text>
         </View>
 
         {/* Profile Card */}
@@ -127,7 +162,7 @@ export default function ProfileScreen() {
         {/* Settings Section */}
         <View style={{ marginTop: 24 }}>
           <Text style={{ paddingHorizontal: 20, color: '#a3a3a3', fontSize: 10, fontWeight: '600', letterSpacing: 1, marginBottom: 8 }}>
-            SETTINGS
+            {t('settings')}
           </Text>
           
           <View style={{ marginHorizontal: 20, backgroundColor: '#fafafa', borderRadius: 12, borderWidth: 1, borderColor: '#f5f5f5', overflow: 'hidden' }}>
@@ -135,8 +170,8 @@ export default function ProfileScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 }}>
               <Ionicons name="notifications-outline" size={20} color="#525252" />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: '#171717', fontSize: 14 }}>Push Notifications</Text>
-                <Text style={{ color: '#a3a3a3', fontSize: 11, marginTop: 2 }}>Receive alerts for entries & payments</Text>
+                <Text style={{ color: '#171717', fontSize: 14 }}>{t('push.notifications')}</Text>
+                <Text style={{ color: '#a3a3a3', fontSize: 11, marginTop: 2 }}>{t('notifications.desc')}</Text>
               </View>
               <Switch
                 value={notificationsEnabled}
@@ -155,8 +190,10 @@ export default function ProfileScreen() {
             >
               <Ionicons name="language-outline" size={20} color="#525252" />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: '#171717', fontSize: 14 }}>Language</Text>
-                <Text style={{ color: '#a3a3a3', fontSize: 11, marginTop: 2 }}>{language}</Text>
+                <Text style={{ color: '#171717', fontSize: 14 }}>{t('language')}</Text>
+                <Text style={{ color: '#a3a3a3', fontSize: 11, marginTop: 2 }}>
+                  {language === 'hi' ? 'हिंदी' : 'English'}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color="#d4d4d4" />
             </TouchableOpacity>
@@ -170,7 +207,7 @@ export default function ProfileScreen() {
             >
               <Ionicons name={theme === 'dark' ? 'moon-outline' : 'sunny-outline'} size={20} color="#525252" />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ color: '#171717', fontSize: 14 }}>Theme</Text>
+                <Text style={{ color: '#171717', fontSize: 14 }}>{t('theme')}</Text>
                 <Text style={{ color: '#a3a3a3', fontSize: 11, marginTop: 2 }}>{getThemeLabel()}</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color="#d4d4d4" />
@@ -194,13 +231,13 @@ export default function ProfileScreen() {
             }}
           >
             <Ionicons name="log-out-outline" size={18} color="#dc2626" />
-            <Text style={{ marginLeft: 8, color: '#dc2626', fontWeight: '600' }}>Logout</Text>
+            <Text style={{ marginLeft: 8, color: '#dc2626', fontWeight: '600' }}>{t('logout')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Version */}
         <View style={{ alignItems: 'center', paddingBottom: 24 }}>
-          <Text style={{ color: '#d4d4d4', fontSize: 12 }}>My Dairy v1.0.0</Text>
+          <Text style={{ color: '#d4d4d4', fontSize: 12 }}>{t('version')}</Text>
         </View>
         
         <View style={{ height: 80 }} />
