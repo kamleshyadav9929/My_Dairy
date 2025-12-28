@@ -1,10 +1,12 @@
 import "./global.css";
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, ActivityIndicator, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, ClipboardList, User as UserIcon, Bell } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
@@ -14,6 +16,9 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import { registerForPushNotificationsAsync } from './src/lib/notificationUtils';
 import { customerPortalApi } from './src/lib/api';
+
+// Keep splash screen visible while loading fonts
+SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -37,14 +42,15 @@ function TabNavigator() {
         tabBarInactiveTintColor: '#94a3b8',
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
+          fontFamily: 'Inter_600SemiBold',
         },
         tabBarIcon: ({ color, size }) => {
-          if (route.name === 'Home') return <Home size={size} color={color} {...({} as any)} />;
-          if (route.name === 'Passbook') return <ClipboardList size={size} color={color} {...({} as any)} />;
-          if (route.name === 'Alerts') return <Bell size={size} color={color} {...({} as any)} />;
-          if (route.name === 'Profile') return <UserIcon size={size} color={color} {...({} as any)} />;
-          return null;
+          let iconName: any = 'home';
+          if (route.name === 'Home') iconName = 'home';
+          if (route.name === 'Passbook') iconName = 'document-text';
+          if (route.name === 'Alerts') iconName = 'notifications';
+          if (route.name === 'Profile') iconName = 'person';
+          return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
     >
@@ -73,7 +79,7 @@ function Navigation() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-slate-50">
+      <View className="flex-1 items-center justify-center bg-neutral-100">
         <ActivityIndicator size="large" color="#4f46e5" />
       </View>
     );
@@ -93,9 +99,38 @@ function Navigation() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  // Set default text styles globally
+  const defaultFontStyle = { fontFamily: 'Inter_400Regular' };
+  const originalRender = Text.render;
+  Text.render = function (...args: any) {
+    const origin = originalRender.call(this, ...args);
+    return React.cloneElement(origin, {
+      style: [defaultFontStyle, origin.props.style],
+    });
+  };
+
   return (
-    <AuthProvider>
-      <Navigation />
-    </AuthProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <AuthProvider>
+        <Navigation />
+      </AuthProvider>
+    </View>
   );
 }
