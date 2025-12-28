@@ -1,12 +1,13 @@
 import "./global.css";
 import React, { useEffect, useCallback } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
@@ -127,10 +128,13 @@ export default function App() {
   };
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <AuthProvider>
-        <Navigation />
-      </AuthProvider>
-    </View>
+    <SafeAreaProvider>
+      <StatusBar backgroundColor="#f5f5f5" barStyle="dark-content" translucent={false} />
+      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <AuthProvider>
+          <Navigation />
+        </AuthProvider>
+      </View>
+    </SafeAreaProvider>
   );
 }
