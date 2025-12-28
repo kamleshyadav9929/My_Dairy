@@ -29,7 +29,7 @@ async function login(req, res) {
                 .eq('phone', customerIdOrPhone)
                 .eq('is_active', true)
                 .maybeSingle();
-            
+
             customer = phoneResult.data;
             error = phoneResult.error;
         }
@@ -41,7 +41,7 @@ async function login(req, res) {
         }
 
         // For this demo, if password_hash is null, allow login with default '1234'
-        const validPassword = customer.password_hash 
+        const validPassword = customer.password_hash
             ? bcrypt.compareSync(password, customer.password_hash)
             : password === '1234';
 
@@ -77,11 +77,34 @@ async function login(req, res) {
  */
 async function getDashboard(req, res) {
     try {
-        const customerId = req.user.id;
+        const customerId = req.user ? req.user.id : null;
         const { from, to } = req.query;
 
+        if (!customerId) {
+            console.error('GetDashboard: Missing customer ID in request user object');
+            return res.status(400).json({ error: 'User not authenticated correctly' });
+        }
+
         const start = from || getFirstDayOfMonth();
+        // Force 'to' date to be inclusive by ensuring it's the end of the day or simply extending logic
+        // But for simply DATE comparisons in supabase:
+        // If we use .lte('date', '2025-12-28'), it matches entries with '2025-12-28'.
+        // However, if entries have time, we might need to be careful.
+        // Our 'date' column is type 'date', so '2025-12-28' should work fine.
+        // Just in case, let's use the provided 'to' or today.
         const end = to || getLocalDate();
+
+        console.log(`Fetching dashboard for Customer: ${customerId}, Date Range: ${start} to ${end}`);
+
+        // Debug query first
+        const { count, error: countError } = await supabase
+            .from('milk_entries')
+            .select('*', { count: 'exact', head: true })
+            .eq('customer_id', customerId)
+            .gte('date', start)
+            .lte('date', end);
+
+        console.log(`Found ${count} entries for this range.`);
 
         const { data, error } = await supabase
             .from('milk_entries')
@@ -90,13 +113,16 @@ async function getDashboard(req, res) {
             .gte('date', start)
             .lte('date', end);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error fetching dashboard entries:', error);
+            throw error;
+        }
 
         const entries = data || [];
 
         const uniqueDates = new Set(entries.map(e => e.date));
         const totalQty = entries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0);
-        
+
         const stats = {
             pouringDays: uniqueDates.size,
             totalMilkQty: totalQty,
@@ -108,7 +134,8 @@ async function getDashboard(req, res) {
         res.json(stats);
     } catch (error) {
         console.error('Dashboard stats error:', error);
-        res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+        console.error('Stack trace:', error.stack);
+        res.status(500).json({ error: 'Failed to fetch dashboard stats', details: error.message });
     }
 }
 
@@ -134,7 +161,7 @@ async function getTodayCollection(req, res) {
 
         const calculateStats = (shiftEntries) => {
             const qty = shiftEntries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0);
-            
+
             if (qty === 0) {
                 return { qty: 0, fat: 0, snf: 0, amount: 0 };
             }
@@ -143,14 +170,14 @@ async function getTodayCollection(req, res) {
             // Weighted averages (exclude 0 fat/snf entries from average calculation)
             const validFatEntries = shiftEntries.filter(e => (e.fat || 0) > 0);
             const validSnfEntries = shiftEntries.filter(e => (e.snf || 0) > 0);
-            
+
             const qtyForFat = validFatEntries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0);
             const qtyForSnf = validSnfEntries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0);
 
-            const fat = qtyForFat > 0 
+            const fat = qtyForFat > 0
                 ? validFatEntries.reduce((sum, e) => sum + ((e.fat || 0) * (e.quantity_litre || 0)), 0) / qtyForFat
                 : 0;
-                
+
             const snf = qtyForSnf > 0
                 ? validSnfEntries.reduce((sum, e) => sum + ((e.snf || 0) * (e.quantity_litre || 0)), 0) / qtyForSnf
                 : 0;
@@ -382,22 +409,22 @@ async function getNotifications(req, res) {
     try {
         const customerId = req.user.id;
         const { limit = 30, unreadOnly = false } = req.query;
-        
+
         let query = supabase
             .from('notifications')
             .select('*')
             .eq('customer_id', customerId)
             .order('created_at', { ascending: false })
             .limit(parseInt(limit));
-        
+
         if (unreadOnly === 'true') {
             query = query.eq('is_read', false);
         }
-        
+
         const { data: notifications, error } = await query;
-        
+
         if (error) throw error;
-        
+
         res.json({ notifications: notifications || [] });
     } catch (error) {
         console.error('Get notifications error:', error);
@@ -412,7 +439,7 @@ async function markNotificationRead(req, res) {
     try {
         const customerId = req.user.id;
         const { id } = req.params;
-        
+
         const { data, error } = await supabase
             .from('notifications')
             .update({ is_read: true })
@@ -420,9 +447,9 @@ async function markNotificationRead(req, res) {
             .eq('customer_id', customerId)
             .select()
             .single();
-        
+
         if (error) throw error;
-        
+
         res.json({ notification: data });
     } catch (error) {
         console.error('Mark notification read error:', error);
@@ -436,15 +463,15 @@ async function markNotificationRead(req, res) {
 async function markAllNotificationsRead(req, res) {
     try {
         const customerId = req.user.id;
-        
+
         const { error } = await supabase
             .from('notifications')
             .update({ is_read: true })
             .eq('customer_id', customerId)
             .eq('is_read', false);
-        
+
         if (error) throw error;
-        
+
         res.json({ message: 'All notifications marked as read' });
     } catch (error) {
         console.error('Mark all notifications read error:', error);
@@ -458,15 +485,15 @@ async function markAllNotificationsRead(req, res) {
 async function getUnreadCount(req, res) {
     try {
         const customerId = req.user.id;
-        
+
         const { count, error } = await supabase
             .from('notifications')
             .select('*', { count: 'exact', head: true })
             .eq('customer_id', customerId)
             .eq('is_read', false);
-        
+
         if (error) throw error;
-        
+
         res.json({ unreadCount: count || 0 });
     } catch (error) {
         console.error('Get unread count error:', error);
@@ -493,12 +520,12 @@ async function createNotification({ customerId, type, title, message, amount, en
             })
             .select()
             .single();
-        
+
         if (error) {
             console.error('Create notification error:', error);
             return null;
         }
-        
+
         return data;
     } catch (error) {
         console.error('Create notification error:', error);

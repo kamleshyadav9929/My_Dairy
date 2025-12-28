@@ -19,8 +19,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 // Helper to get local date as YYYY-MM-DD
 const getLocalDate = (date = new Date()) => {
     const d = new Date(date);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
+    const offset = d.getTimezoneOffset();
+    const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
 };
 
 // Helper to get first day of current month
@@ -30,7 +31,7 @@ const getFirstDayOfMonth = () => {
     return getLocalDate(firstDay);
 };
 
-module.exports = { 
+module.exports = {
     supabase,
     getLocalDate,
     getFirstDayOfMonth

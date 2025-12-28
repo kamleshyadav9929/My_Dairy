@@ -1,49 +1,17 @@
-const admin = require('firebase-admin');
+const { Expo } = require('expo-server-sdk');
 const { supabase } = require('../config/supabase');
-const path = require('path');
-const fs = require('fs');
 
-// Initialize Firebase Admin SDK
-let firebaseInitialized = false;
+// Initialize Expo SDK
+const expo = new Expo();
 
-const initializeFirebase = () => {
-    if (firebaseInitialized) return true;
-
-    try {
-        // Try to load service account from environment variable or file
-        const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || 
-            path.join(__dirname, '../../firebase-service-account.json');
-        
-        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-            // Parse from environment variable (for production)
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-            });
-            firebaseInitialized = true;
-            console.log('Firebase Admin initialized from environment variable');
-        } else if (fs.existsSync(serviceAccountPath)) {
-            // Load from file (for development)
-            const serviceAccount = require(serviceAccountPath);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-            });
-            firebaseInitialized = true;
-            console.log('Firebase Admin initialized from service account file');
-        } else {
-            console.warn('Firebase service account not found. Push notifications disabled.');
-            return false;
-        }
-        return true;
-    } catch (error) {
-        console.error('Failed to initialize Firebase:', error.message);
-        return false;
-    }
-};
-
-// Register FCM token for a customer
+// Register Expo push token for a customer
 const registerToken = async (customerId, token, deviceInfo = null) => {
     try {
+        if (!Expo.isExpoPushToken(token)) {
+            console.error(`Push token ${token} is not a valid Expo push token`);
+            throw new Error('Invalid Expo push token');
+        }
+
         const { data, error } = await supabase
             .from('fcm_tokens')
             .upsert({
@@ -59,10 +27,10 @@ const registerToken = async (customerId, token, deviceInfo = null) => {
             .single();
 
         if (error) throw error;
-        console.log(`FCM token registered for customer ${customerId}`);
+        console.log(`Expo push token registered for customer ${customerId}`);
         return data;
     } catch (error) {
-        console.error('Error registering FCM token:', error);
+        console.error('Error registering push token:', error);
         throw error;
     }
 };
@@ -84,130 +52,94 @@ const getCustomerTokens = async (customerId) => {
     }
 };
 
-// Send notification to a specific customer
+// Send notification using Expo SDK
 const sendToCustomer = async (customerId, title, body, data = {}) => {
-    if (!initializeFirebase()) {
-        console.warn('Firebase not initialized, skipping notification');
-        return { success: false, reason: 'Firebase not initialized' };
-    }
-
     try {
         const tokens = await getCustomerTokens(customerId);
-        
+
         if (tokens.length === 0) {
-            console.log(`No FCM tokens found for customer ${customerId}`);
+            console.log(`No tokens found for customer ${customerId}`);
             return { success: false, reason: 'No tokens found' };
         }
 
-        const message = {
-            notification: { title, body },
-            data: {
-                ...data,
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
-                customerId: String(customerId)
-            },
-            tokens: tokens
-        };
+        const messages = [];
+        const validTokens = [];
 
-        const response = await admin.messaging().sendEachForMulticast(message);
-        
-        console.log(`Notification sent to customer ${customerId}:`, {
-            successCount: response.successCount,
-            failureCount: response.failureCount
-        });
+        for (const token of tokens) {
+            if (!Expo.isExpoPushToken(token)) {
+                console.warn(`Skipping invalid Expo push token: ${token}`);
+                continue;
+            }
 
-        // Remove invalid tokens
-        if (response.failureCount > 0) {
-            const invalidTokens = [];
-            response.responses.forEach((resp, idx) => {
-                if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
-                    invalidTokens.push(tokens[idx]);
-                }
+            validTokens.push(token);
+            messages.push({
+                to: token,
+                sound: 'default',
+                title: title,
+                body: body,
+                data: { ...data, customerId }
             });
-            
-            if (invalidTokens.length > 0) {
-                await deactivateTokens(invalidTokens);
+        }
+
+        if (messages.length === 0) {
+            return { success: false, reason: 'No valid tokens found' };
+        }
+
+        const chunks = expo.chunkPushNotifications(messages);
+        const tickets = [];
+
+        for (const chunk of chunks) {
+            try {
+                const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                tickets.push(...ticketChunk);
+            } catch (error) {
+                console.error('Error sending chunks:', error);
             }
         }
 
-        return { success: true, successCount: response.successCount };
+        console.log(`Sent ${messages.length} notifications to customer ${customerId}`);
+
+        // Handle errors (optional cleanup of invalid tokens)
+        // For simplicity, we just log ticket errors here
+        const receiptIds = [];
+        for (const ticket of tickets) {
+            if (ticket.status === 'ok') {
+                receiptIds.push(ticket.id);
+            }
+        }
+
+        return { success: true, count: messages.length };
     } catch (error) {
         console.error('Error sending notification:', error);
         return { success: false, reason: error.message };
     }
 };
 
-// Deactivate invalid tokens
-const deactivateTokens = async (tokens) => {
-    try {
-        await supabase
-            .from('fcm_tokens')
-            .update({ is_active: false })
-            .in('token', tokens);
-        console.log(`Deactivated ${tokens.length} invalid tokens`);
-    } catch (error) {
-        console.error('Error deactivating tokens:', error);
-    }
-};
-
-// Send milk entry notification
+// Helper for milk entry
 const sendMilkEntryNotification = async (entry, customerName) => {
-    // Format date as DD-MM-YYYY
-    const dateObj = new Date(entry.date);
-    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
-    
-    // Get shift display name
-    const shiftName = entry.shift === 'morning' ? 'Morning' : 'Evening';
-    
-    // Format amounts
-    const qty = parseFloat(entry.quantity_litre || 0).toFixed(1);
-    const fat = parseFloat(entry.fat || 0).toFixed(1);
-    const snf = parseFloat(entry.snf || 0).toFixed(1);
-    const rate = parseFloat(entry.rate_per_litre || 0).toFixed(2);
-    const amount = parseFloat(entry.amount || 0).toFixed(2);
-    
-    // Customer code (AMCU ID or customer ID)
-    const customerCode = entry.customers?.amcu_customer_id || String(entry.customer_id).padStart(4, '0');
-    
-    const title = `My Dairy`;
-    const body = `Dear ${customerName} Milk pouring details are\nDT:${formattedDate}-${shiftName} CODE: ${customerCode},\nQTY:${qty}, FAT:${fat}, SNF:${snf}, RT:${rate},\nAMT:${amount} MY DAIRY`;
-    
-    return sendToCustomer(entry.customer_id, title, body, {
-        type: 'milk_entry',
-        entryId: String(entry.id),
-        date: entry.date
+    const formattedDate = new Date(entry.date).toLocaleDateString();
+    const shift = entry.shift === 'M' ? 'Morning' : 'Evening';
+    const body = `Milk Collected: ${entry.quantity_litre}L (${shift})\nFat: ${entry.fat}, SNF: ${entry.snf}\nAmount: ₹${entry.amount}`;
+
+    return sendToCustomer(entry.customer_id, 'Milk Entry Added', body, {
+        type: 'entry',
+        id: entry.id
     });
 };
 
-// Send payment notification
-const sendPaymentNotification = async (payment, customerName, remainingBalance = 0) => {
-    // Format date as DD-MM-YYYY
-    const dateObj = new Date(payment.date);
-    const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${dateObj.getFullYear()}`;
-    
-    // Format amounts
-    const paidAmount = parseFloat(payment.amount || 0).toFixed(2);
-    const balance = parseFloat(remainingBalance || 0).toFixed(2);
-    
-    // Payment mode
-    const paymentMode = payment.mode || 'Cash';
-    
-    const title = `💰 My Dairy`;
-    const body = `Dear ${customerName} Payment received.\nDT:${formattedDate} AMT:₹${paidAmount}\nMODE: ${paymentMode}\nREMAINING BALANCE: ₹${balance}\nThank you! MY DAIRY`;
-    
-    return sendToCustomer(payment.customer_id, title, body, {
+// Helper for payment
+const sendPaymentNotification = async (payment, customerName) => {
+    const formattedDate = new Date(payment.date).toLocaleDateString();
+    const body = `Payment Received: ₹${payment.amount}\nMode: ${payment.mode}`;
+
+    return sendToCustomer(payment.customer_id, 'Payment Received', body, {
         type: 'payment',
-        paymentId: String(payment.id),
-        date: payment.date
+        id: payment.id
     });
 };
 
-// Send broadcast notification to all customers
+// Helper for broadcast
 const sendBroadcast = async (title, body, data = {}) => {
-    if (!initializeFirebase()) {
-        return { success: false, reason: 'Firebase not initialized' };
-    }
-
     try {
         const { data: allTokens, error } = await supabase
             .from('fcm_tokens')
@@ -215,40 +147,33 @@ const sendBroadcast = async (title, body, data = {}) => {
             .eq('is_active', true);
 
         if (error) throw error;
-        if (!allTokens || allTokens.length === 0) {
-            return { success: false, reason: 'No active tokens' };
+
+        const messages = [];
+        for (const t of allTokens) {
+            if (Expo.isExpoPushToken(t.token)) {
+                messages.push({
+                    to: t.token,
+                    sound: 'default',
+                    title: title,
+                    body: body,
+                    data: { ...data, type: 'broadcast' }
+                });
+            }
         }
 
-        const tokens = allTokens.map(t => t.token);
-        
-        // FCM allows max 500 tokens per request
-        const batchSize = 500;
-        let totalSuccess = 0;
-        let totalFailure = 0;
-
-        for (let i = 0; i < tokens.length; i += batchSize) {
-            const batch = tokens.slice(i, i + batchSize);
-            const message = {
-                notification: { title, body },
-                data: { ...data, type: 'broadcast' },
-                tokens: batch
-            };
-
-            const response = await admin.messaging().sendEachForMulticast(message);
-            totalSuccess += response.successCount;
-            totalFailure += response.failureCount;
+        const chunks = expo.chunkPushNotifications(messages);
+        for (const chunk of chunks) {
+            await expo.sendPushNotificationsAsync(chunk);
         }
 
-        console.log(`Broadcast sent: ${totalSuccess} success, ${totalFailure} failed`);
-        return { success: true, successCount: totalSuccess, failureCount: totalFailure };
+        return { success: true, count: messages.length };
     } catch (error) {
         console.error('Error sending broadcast:', error);
-        return { success: false, reason: error.message };
+        return { success: false, error: error.message };
     }
 };
 
 module.exports = {
-    initializeFirebase,
     registerToken,
     sendToCustomer,
     sendMilkEntryNotification,

@@ -9,9 +9,9 @@ async function debugData() {
     const { data: customer } = await supabase
         .from('customers')
         .select('*')
-        .eq('amcu_customer_id', '1001')
+        .eq('amcu_customer_id', '1002')
         .single();
-    
+
     if (!customer) {
         console.log("Customer 1001 not found");
         return;
@@ -28,7 +28,7 @@ async function debugData() {
 
     console.log(`Found ${entries?.length || 0} entries:`);
     entries?.forEach((e, i) => {
-        console.log(`[${i+1}] Qty: ${e.quantity_litre}, Fat: ${e.fat}, SNF: ${e.snf}, Amount: ${e.amount}, Shift: ${e.shift}, Created: ${e.created_at}`);
+        console.log(`[${i + 1}] Qty: ${e.quantity_litre}, Fat: ${e.fat}, SNF: ${e.snf}, Amount: ${e.amount}, Shift: ${e.shift}, Created: ${e.created_at}`);
     });
 }
 
