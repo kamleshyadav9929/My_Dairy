@@ -4,13 +4,16 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { useTheme } from '../context/ThemeContext';
+import { useNetwork } from '../context/NetworkContext';
 import { customerPortalApi } from '../lib/api';
+import { cacheService } from '../lib/cacheService';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
   const { colors, isDark } = useTheme();
+  const { isConnected } = useNetwork();
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -21,30 +24,70 @@ export default function DashboardScreen() {
 
   const fetchData = async () => {
     try {
-      const [summaryRes, todayRes, trendsRes, passbookRes, paymentsRes] = await Promise.all([
-        customerPortalApi.getDashboard(),
-        customerPortalApi.getTodayCollection(),
-        customerPortalApi.getCollectionTrends(7),
-        customerPortalApi.getPassbook({ from: '2020-01-01', to: new Date().toISOString().split('T')[0] }),
-        customerPortalApi.getPayments({ limit: 3 }),
-      ]);
-      setDashboardData(summaryRes.data);
-      setTodayCollection(todayRes.data);
-      setTrends(trendsRes.data || []);
-      setPassbook(passbookRes.data.summary || {});
-      setRecentPayments(paymentsRes.data.payments || []);
+      if (isConnected) {
+        // Fetch from API and cache
+        const [summaryRes, todayRes, trendsRes, passbookRes, paymentsRes] = await Promise.all([
+          customerPortalApi.getDashboard(),
+          customerPortalApi.getTodayCollection(),
+          customerPortalApi.getCollectionTrends(7),
+          customerPortalApi.getPassbook({ from: '2020-01-01', to: new Date().toISOString().split('T')[0] }),
+          customerPortalApi.getPayments({ limit: 3 }),
+        ]);
+        
+        setDashboardData(summaryRes.data);
+        setTodayCollection(todayRes.data);
+        setTrends(trendsRes.data || []);
+        setPassbook(passbookRes.data.summary || {});
+        setRecentPayments(paymentsRes.data.payments || []);
+
+        // Save to cache
+        await cacheService.saveDashboard(summaryRes.data);
+        await cacheService.saveTodayCollection(todayRes.data);
+        await cacheService.saveTrends(trendsRes.data || []);
+        await cacheService.savePassbook(passbookRes.data.summary || {});
+        await cacheService.savePayments(paymentsRes.data.payments || []);
+      } else {
+        // Load from cache
+        const [cachedDashboard, cachedToday, cachedTrends, cachedPassbook, cachedPayments] = await Promise.all([
+          cacheService.getDashboard(),
+          cacheService.getTodayCollection(),
+          cacheService.getTrends(),
+          cacheService.getPassbook(),
+          cacheService.getPayments(),
+        ]);
+        
+        setDashboardData(cachedDashboard);
+        setTodayCollection(cachedToday);
+        setTrends(cachedTrends || []);
+        setPassbook(cachedPassbook);
+        setRecentPayments(cachedPayments || []);
+      }
     } catch (error: any) {
       console.error('Fetch error:', error.response?.data || error.message);
+      // On error, try loading from cache
+      const [cachedDashboard, cachedToday, cachedTrends, cachedPassbook, cachedPayments] = await Promise.all([
+        cacheService.getDashboard(),
+        cacheService.getTodayCollection(),
+        cacheService.getTrends(),
+        cacheService.getPassbook(),
+        cacheService.getPayments(),
+      ]);
+      
+      setDashboardData(cachedDashboard);
+      setTodayCollection(cachedToday);
+      setTrends(cachedTrends || []);
+      setPassbook(cachedPassbook);
+      setRecentPayments(cachedPayments || []);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [isConnected]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
-  }, []);
+  }, [isConnected]);
 
   const formatCurrency = (val: number) => '₹' + (val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { customerPortalApi } from '../lib/api';
@@ -48,32 +48,28 @@ export default function LoginScreen() {
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: '#ffffff' }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       <ScrollView 
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 80, paddingBottom: 40 }}>
-          {/* Logo/Header */}
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            <View style={{ 
-              width: 80, 
-              height: 80, 
-              backgroundColor: '#4f46e5', 
-              borderRadius: 24, 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              marginBottom: 24
-            }}>
-              <Ionicons name="water" size={40} color="#ffffff" />
-            </View>
-            <Text style={{ fontSize: 28, fontWeight: '700', color: '#171717', marginBottom: 8 }}>
+        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 60, justifyContent: 'center' }}>
+          {/* Logo */}
+          <View style={{ alignItems: 'center', marginBottom: 40 }}>
+            <Image 
+              source={require('../../assets/icon.png')} 
+              style={{ width: 100, height: 100, borderRadius: 24 }}
+              resizeMode="contain"
+            />
+            <Text style={{ fontSize: 28, fontWeight: '700', color: '#171717', marginTop: 24, marginBottom: 8 }}>
               Welcome Back
             </Text>
-            <Text style={{ fontSize: 14, color: '#737373', textAlign: 'center' }}>
+            <Text style={{ fontSize: 14, color: '#737373', textAlign: 'center', lineHeight: 20 }}>
               Login to your dairy account{'\n'}to view entries and payments
             </Text>
           </View>
@@ -104,12 +100,13 @@ export default function LoginScreen() {
                   onChangeText={setCustomerId}
                   autoCapitalize="none"
                   keyboardType="default"
+                  returnKeyType="next"
                 />
               </View>
             </View>
 
             {/* Password Input */}
-            <View style={{ marginBottom: 24 }}>
+            <View style={{ marginBottom: 32 }}>
               <Text style={{ fontSize: 13, fontWeight: '500', color: '#525252', marginBottom: 8, marginLeft: 4 }}>
                 Password
               </Text>
@@ -131,6 +128,8 @@ export default function LoginScreen() {
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#737373" />
@@ -159,7 +158,7 @@ export default function LoginScreen() {
           </View>
 
           {/* Footer */}
-          <View style={{ marginTop: 'auto', alignItems: 'center', paddingTop: 32 }}>
+          <View style={{ alignItems: 'center', marginTop: 32 }}>
             <Text style={{ color: '#737373', fontSize: 14 }}>Don't have an account?</Text>
             <TouchableOpacity style={{ marginTop: 4 }}>
               <Text style={{ color: '#4f46e5', fontWeight: '600', fontSize: 14 }}>Contact Administrator</Text>

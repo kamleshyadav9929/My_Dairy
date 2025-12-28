@@ -12,6 +12,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { I18nProvider, useI18n } from './src/context/I18nContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { NetworkProvider } from './src/context/NetworkContext';
+import { OfflineBanner } from './src/components/OfflineBanner';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import PassbookScreen from './src/screens/PassbookScreen';
@@ -30,56 +32,59 @@ function TabNavigator() {
   const { colors, isDark } = useTheme();
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-          backgroundColor: colors.background,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontFamily: 'Inter_500Medium',
-        },
-        tabBarIcon: ({ color, focused, size }) => {
-          let iconName: any;
-          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Passbook') iconName = focused ? 'document-text' : 'document-text-outline';
-          else if (route.name === 'Alerts') iconName = focused ? 'notifications' : 'notifications-outline';
-          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
-          return <Ionicons name={iconName} size={22} color={color} />;
-        },
-        tabBarLabel: ({ focused }) => {
-          let label = '';
-          if (route.name === 'Home') label = t('nav.home');
-          else if (route.name === 'Passbook') label = t('nav.passbook');
-          else if (route.name === 'Alerts') label = t('nav.alerts');
-          else if (route.name === 'Profile') label = t('nav.profile');
-          return (
-            <Text style={{ 
-              fontSize: 10, 
-              fontFamily: 'Inter_500Medium',
-              color: focused ? colors.primary : colors.textSecondary
-            }}>
-              {label}
-            </Text>
-          );
-        },
-      })}
-    >
-      <Tab.Screen name="Home" component={DashboardScreen} />
-      <Tab.Screen name="Passbook" component={PassbookScreen} />
-      <Tab.Screen name="Alerts" component={AlertsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
-    </Tab.Navigator>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <OfflineBanner />
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarStyle: {
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+            backgroundColor: colors.background,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontFamily: 'Inter_500Medium',
+          },
+          tabBarIcon: ({ color, focused, size }) => {
+            let iconName: any;
+            if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+            else if (route.name === 'Passbook') iconName = focused ? 'document-text' : 'document-text-outline';
+            else if (route.name === 'Alerts') iconName = focused ? 'notifications' : 'notifications-outline';
+            else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+            return <Ionicons name={iconName} size={22} color={color} />;
+          },
+          tabBarLabel: ({ focused }) => {
+            let label = '';
+            if (route.name === 'Home') label = t('nav.home');
+            else if (route.name === 'Passbook') label = t('nav.passbook');
+            else if (route.name === 'Alerts') label = t('nav.alerts');
+            else if (route.name === 'Profile') label = t('nav.profile');
+            return (
+              <Text style={{ 
+                fontSize: 10, 
+                fontFamily: 'Inter_500Medium',
+                color: focused ? colors.primary : colors.textSecondary
+              }}>
+                {label}
+              </Text>
+            );
+          },
+        })}
+      >
+        <Tab.Screen name="Home" component={DashboardScreen} />
+        <Tab.Screen name="Passbook" component={PassbookScreen} />
+        <Tab.Screen name="Alerts" component={AlertsScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+      </Tab.Navigator>
+    </View>
   );
 }
 
@@ -149,16 +154,18 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <I18nProvider>
-        <ThemeProvider>
-          <StatusBar backgroundColor="#ffffff" barStyle="dark-content" translucent={false} />
-          <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-            <AuthProvider>
-              <Navigation />
-            </AuthProvider>
-          </View>
-        </ThemeProvider>
-      </I18nProvider>
+      <NetworkProvider>
+        <I18nProvider>
+          <ThemeProvider>
+            <StatusBar backgroundColor="#ffffff" barStyle="dark-content" translucent={false} />
+            <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+              <AuthProvider>
+                <Navigation />
+              </AuthProvider>
+            </View>
+          </ThemeProvider>
+        </I18nProvider>
+      </NetworkProvider>
     </SafeAreaProvider>
   );
 }
