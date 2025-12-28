@@ -73,25 +73,29 @@ export default function PassbookScreen() {
     finally { setDownloading(false); }
   };
 
+  const handleFilterChange = (newFilter: 'all' | 'milk' | 'payment') => {
+    setFilter(newFilter);
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       {/* Header */}
-      <View className="px-5 pt-4 pb-4 border-b border-neutral-100">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-neutral-900 text-xl font-semibold">Passbook</Text>
-          <View className="flex-row gap-2">
+      <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: '#171717', fontSize: 20, fontWeight: '600' }}>Passbook</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity 
               onPress={() => Share.share({ message: `Balance: ${formatCurrency(summary?.balance)}` })}
-              className="w-9 h-9 rounded-full bg-neutral-100 items-center justify-center"
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#f5f5f5', alignItems: 'center', justifyContent: 'center' }}
             >
               <Ionicons name="share-outline" size={16} color="#525252" />
             </TouchableOpacity>
             <TouchableOpacity 
               onPress={handleDownload}
               disabled={downloading}
-              className="w-9 h-9 rounded-full bg-neutral-900 items-center justify-center"
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#171717', alignItems: 'center', justifyContent: 'center' }}
             >
               {downloading ? <ActivityIndicator size="small" color="white" /> : <Ionicons name="download-outline" size={16} color="white" />}
             </TouchableOpacity>
@@ -100,29 +104,34 @@ export default function PassbookScreen() {
       </View>
 
       <ScrollView 
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />}
       >
-        {/* Balance Card */}
-        <View className="mx-5 mt-4 bg-neutral-900 rounded-2xl p-5">
-          <Text className="text-white/50 text-[10px] tracking-widest mb-1">CURRENT BALANCE</Text>
-          <Text className="text-white text-3xl font-bold">{formatCurrency(summary?.balance)}</Text>
+        {/* Balance Card - Light style like Dashboard */}
+        <View style={{ marginHorizontal: 20, marginTop: 16, backgroundColor: '#fafafa', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#f5f5f5' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <Ionicons name="wallet-outline" size={16} color="#737373" />
+            <Text style={{ marginLeft: 8, color: '#737373', fontSize: 12, fontWeight: '500' }}>Current Balance</Text>
+          </View>
           
-          <View className="flex-row mt-4 pt-4 border-t border-white/10">
-            <View className="flex-1">
-              <Text className="text-white/40 text-[9px] tracking-wide">EARNED</Text>
-              <Text className="text-emerald-400 text-sm font-semibold mt-0.5">+{formatCurrency(summary?.totalMilkAmount || 0)}</Text>
+          <Text style={{ color: '#171717', fontSize: 30, fontWeight: '700' }}>{formatCurrency(summary?.balance)}</Text>
+          
+          <View style={{ flexDirection: 'row', marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#e5e5e5' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#a3a3a3', fontSize: 10, letterSpacing: 1 }}>EARNED</Text>
+              <Text style={{ color: '#10b981', fontSize: 14, fontWeight: '600', marginTop: 4 }}>+{formatCurrency(summary?.totalMilkAmount || 0)}</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-white/40 text-[9px] tracking-wide">RECEIVED</Text>
-              <Text className="text-white text-sm font-semibold mt-0.5">-{formatCurrency(summary?.totalPayments || 0)}</Text>
+            <View style={{ width: 1, backgroundColor: '#e5e5e5' }} />
+            <View style={{ flex: 1, paddingLeft: 16 }}>
+              <Text style={{ color: '#a3a3a3', fontSize: 10, letterSpacing: 1 }}>RECEIVED</Text>
+              <Text style={{ color: '#171717', fontSize: 14, fontWeight: '600', marginTop: 4 }}>-{formatCurrency(summary?.totalPayments || 0)}</Text>
             </View>
           </View>
         </View>
 
         {/* Filters */}
-        <View className="mx-5 mt-4 flex-row bg-neutral-100 p-1 rounded-xl">
+        <View style={{ marginHorizontal: 20, marginTop: 16, flexDirection: 'row', backgroundColor: '#f5f5f5', padding: 4, borderRadius: 12 }}>
           {[
             { key: 'all', label: 'All' },
             { key: 'milk', label: 'Milk' },
@@ -130,10 +139,20 @@ export default function PassbookScreen() {
           ].map((f) => (
             <TouchableOpacity 
               key={f.key} 
-              onPress={() => setFilter(f.key as any)}
-              className={`flex-1 py-2.5 items-center rounded-lg ${filter === f.key ? 'bg-white shadow-sm' : ''}`}
+              onPress={() => handleFilterChange(f.key as any)}
+              style={{ 
+                flex: 1, 
+                paddingVertical: 10, 
+                alignItems: 'center', 
+                borderRadius: 8,
+                backgroundColor: filter === f.key ? '#ffffff' : 'transparent',
+                shadowColor: filter === f.key ? '#000' : 'transparent',
+                shadowOpacity: filter === f.key ? 0.05 : 0,
+                shadowRadius: 2,
+                elevation: filter === f.key ? 1 : 0,
+              }}
             >
-              <Text className={`text-xs font-medium ${filter === f.key ? 'text-neutral-900' : 'text-neutral-500'}`}>
+              <Text style={{ fontSize: 12, fontWeight: '500', color: filter === f.key ? '#171717' : '#737373' }}>
                 {f.label}
               </Text>
             </TouchableOpacity>
@@ -141,30 +160,48 @@ export default function PassbookScreen() {
         </View>
 
         {/* Transactions */}
-        <View className="px-5 mt-4 pb-24">
+        <View style={{ paddingHorizontal: 20, marginTop: 16, paddingBottom: 100 }}>
           {loading ? (
-            <ActivityIndicator size="large" color="#171717" className="mt-10" />
+            <ActivityIndicator size="large" color="#171717" style={{ marginTop: 40 }} />
           ) : list.length === 0 ? (
-            <View className="items-center py-16">
+            <View style={{ alignItems: 'center', paddingVertical: 64 }}>
               <Ionicons name="document-outline" size={40} color="#d4d4d4" />
-              <Text className="text-neutral-400 mt-3 font-medium">No transactions</Text>
+              <Text style={{ color: '#a3a3a3', marginTop: 12, fontWeight: '500' }}>No transactions</Text>
             </View>
           ) : (
             list.map((item, idx) => {
               const isMilk = item.type.toLowerCase() === 'milk';
               return (
-                <View key={item.id} className={`flex-row items-center py-4 ${idx !== 0 ? 'border-t border-neutral-100' : ''}`}>
-                  <View className={`w-10 h-10 rounded-full items-center justify-center ${isMilk ? 'bg-indigo-50' : 'bg-emerald-50'}`}>
+                <View 
+                  key={item.id} 
+                  style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    paddingVertical: 16, 
+                    borderTopWidth: idx !== 0 ? 1 : 0, 
+                    borderTopColor: '#f5f5f5' 
+                  }}
+                >
+                  <View 
+                    style={{ 
+                      width: 40, 
+                      height: 40, 
+                      borderRadius: 20, 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      backgroundColor: isMilk ? '#eef2ff' : '#ecfdf5' 
+                    }}
+                  >
                     <Ionicons name={isMilk ? 'water-outline' : 'card-outline'} size={18} color={isMilk ? '#4f46e5' : '#10b981'} />
                   </View>
-                  <View className="flex-1 ml-3">
-                    <Text className="text-neutral-900 font-medium text-sm">{isMilk ? 'Milk Collection' : 'Payment'}</Text>
-                    <Text className="text-neutral-400 text-xs mt-0.5">
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={{ color: '#171717', fontWeight: '500', fontSize: 14 }}>{isMilk ? 'Milk Collection' : 'Payment'}</Text>
+                    <Text style={{ color: '#a3a3a3', fontSize: 12, marginTop: 2 }}>
                       {new Date(item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                      {isMilk && item.details && ` · ${item.details.quantity_litre}L`}
+                      {isMilk && item.details && ` · ${item.details.quantity_litre || item.details.qty}L`}
                     </Text>
                   </View>
-                  <Text className={`font-semibold ${item.credit > 0 ? 'text-emerald-600' : 'text-neutral-900'}`}>
+                  <Text style={{ fontWeight: '600', color: item.credit > 0 ? '#10b981' : '#171717' }}>
                     {item.credit > 0 ? '+' : ''}{formatCurrency(item.credit > 0 ? item.credit : -item.debit)}
                   </Text>
                 </View>
