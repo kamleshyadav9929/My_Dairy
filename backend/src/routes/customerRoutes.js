@@ -24,6 +24,7 @@ router.use('/me', authenticateCustomer);
 router.get('/me/summary', customerController.getDashboard);
 router.get('/me/today-collection', customerController.getTodayCollection);
 router.get('/me/last-days-collection', customerController.getLastDaysCollection);
+router.get('/me/collection-trends', customerController.getLastDaysCollection); // Alias for mobile app
 router.get('/me/payments', customerController.getPayments);
 router.get('/me/passbook', customerController.getPassbook);
 router.get('/me/notifications', customerController.getNotifications);
