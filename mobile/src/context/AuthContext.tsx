@@ -19,24 +19,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadStoredAuth();
-  }, []);
-
-  const loadStoredAuth = async () => {
-    try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      const userData = await SecureStore.getItemAsync(USER_KEY);
-      
-      if (token && userData) {
-        setAuthToken(token);
-        setUser(JSON.parse(userData));
+    // TEMP: Force clear cache once to fix stale token
+    const forceLogout = async () => {
+      try {
+        console.log('🔄 Clearing cached credentials to fix stale token...');
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await SecureStore.deleteItemAsync(USER_KEY);
+        setAuthToken(null);
+        setUser(null);
+        console.log('✅ Cache cleared. Please log in again.');
+      } catch (e) {
+        console.error('Clear cache error:', e);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to load storage:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+    forceLogout();
+  }, []);
 
   const login = async (userData: any, token: string) => {
     try {

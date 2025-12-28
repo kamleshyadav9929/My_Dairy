@@ -76,7 +76,47 @@ export default function PassbookScreen() {
   };
   
   const handleDownload = async () => {
-     Alert.alert('Coming Soon', 'PDF Download will be available shortly.');
+    if (!transactions.length || !summary || !user) {
+      Alert.alert('No Data', 'No transactions to export.');
+      return;
+    }
+    
+    setDownloading(true);
+    try {
+      const fromDate = currentMonth 
+        ? new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toLocaleDateString('en-IN')
+        : 'All Time';
+      const toDate = currentMonth 
+        ? new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).toLocaleDateString('en-IN')
+        : new Date().toLocaleDateString('en-IN');
+      
+      await generatePassbookPDF({
+        customer: {
+          name: user.name || 'Customer',
+          amcuId: user.amcuId || user.id?.toString() || '-'
+        },
+        entries: transactions.map(t => ({
+          date: new Date(t.date).toLocaleDateString('en-IN'),
+          type: t.type.toLowerCase(),
+          description: t.description || (t.type === 'MILK' ? 'Milk Collection' : 'Payment'),
+          debit: t.debit || 0,
+          credit: t.credit || 0,
+          balance: t.balance || 0
+        })),
+        summary: {
+          totalLitres: summary.totalLitres || 0,
+          totalAmount: summary.totalMilkAmount || summary.totalAmount || 0,
+          totalPayments: summary.totalPayments || 0,
+          balance: summary.balance || 0
+        },
+        period: { from: fromDate, to: toDate }
+      });
+    } catch (error) {
+      console.error('PDF Error:', error);
+      Alert.alert('Error', 'Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const MilkIcon = () => (
