@@ -17,6 +17,7 @@ export default function DashboardScreen() {
 
   const fetchData = async () => {
     try {
+      console.log('Fetching dashboard data...');
       const [summaryRes, todayRes, trendsRes, paymentsRes] = await Promise.all([
         customerPortalApi.getDashboard(),
         customerPortalApi.getTodayCollection(),
@@ -24,12 +25,15 @@ export default function DashboardScreen() {
         customerPortalApi.getPayments({ limit: 1 })
       ]);
       
+      console.log('Dashboard API Response:', JSON.stringify(summaryRes.data, null, 2));
+      
       setDashboardData(summaryRes.data);
       setTodayCollection(todayRes.data);
       setTrends(trendsRes.data);
       setRecentPayments(paymentsRes.data.payments || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fetch dashboard error:', error);
+      console.error('Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
