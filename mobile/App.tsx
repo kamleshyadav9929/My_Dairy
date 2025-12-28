@@ -10,6 +10,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { I18nProvider, useI18n } from './src/context/I18nContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import PassbookScreen from './src/screens/PassbookScreen';
@@ -18,13 +20,15 @@ import AlertsScreen from './src/screens/AlertsScreen';
 import { registerForPushNotificationsAsync } from './src/lib/notificationUtils';
 import { customerPortalApi } from './src/lib/api';
 
-// Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
+  const { t } = useI18n();
+  const { colors, isDark } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -33,14 +37,14 @@ function TabNavigator() {
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,
-          backgroundColor: '#ffffff',
+          backgroundColor: colors.background,
           borderTopWidth: 1,
-          borderTopColor: '#f1f5f9',
+          borderTopColor: colors.border,
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarActiveTintColor: '#4f46e5',
-        tabBarInactiveTintColor: '#94a3b8',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
           fontSize: 10,
           fontFamily: 'Inter_500Medium',
@@ -52,6 +56,22 @@ function TabNavigator() {
           else if (route.name === 'Alerts') iconName = focused ? 'notifications' : 'notifications-outline';
           else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return <Ionicons name={iconName} size={22} color={color} />;
+        },
+        tabBarLabel: ({ focused }) => {
+          let label = '';
+          if (route.name === 'Home') label = t('nav.home');
+          else if (route.name === 'Passbook') label = t('nav.passbook');
+          else if (route.name === 'Alerts') label = t('nav.alerts');
+          else if (route.name === 'Profile') label = t('nav.profile');
+          return (
+            <Text style={{ 
+              fontSize: 10, 
+              fontFamily: 'Inter_500Medium',
+              color: focused ? colors.primary : colors.textSecondary
+            }}>
+              {label}
+            </Text>
+          );
         },
       })}
     >
@@ -65,6 +85,7 @@ function TabNavigator() {
 
 function Navigation() {
   const { user, isLoading } = useAuth();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     if (user) {
@@ -80,8 +101,8 @@ function Navigation() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-neutral-100">
-        <ActivityIndicator size="large" color="#4f46e5" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -117,7 +138,6 @@ export default function App() {
     return null;
   }
 
-  // Set default text styles globally
   const defaultFontStyle = { fontFamily: 'Inter_400Regular' };
   const originalRender = Text.render;
   Text.render = function (...args: any) {
@@ -129,12 +149,16 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar backgroundColor="#f5f5f5" barStyle="dark-content" translucent={false} />
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <AuthProvider>
-          <Navigation />
-        </AuthProvider>
-      </View>
+      <I18nProvider>
+        <ThemeProvider>
+          <StatusBar backgroundColor="#ffffff" barStyle="dark-content" translucent={false} />
+          <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+            <AuthProvider>
+              <Navigation />
+            </AuthProvider>
+          </View>
+        </ThemeProvider>
+      </I18nProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, StatusBar, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, StatusBar } from 'react-native';
 import { customerPortalApi } from '../lib/api';
+import { useI18n } from '../context/I18nContext';
+import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Notification {
@@ -14,11 +16,13 @@ interface Notification {
 }
 
 export default function AlertsScreen() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { t } = useI18n();
+  const { colors, isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const fetchNotifications = async () => {
+  const loadData = async () => {
     try {
       const res = await customerPortalApi.getNotifications();
       setNotifications(res.data.notifications || []);
@@ -30,105 +34,108 @@ export default function AlertsScreen() {
     }
   };
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => { loadData(); }, []);
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchNotifications();
+    loadData();
   }, []);
 
   const formatTimeAgo = (dateStr: string) => {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMs / 3600000);
-    const days = Math.floor(diffMs / 86400000);
-    
-    if (mins < 60) return `${mins}m`;
-    if (hours < 24) return `${hours}h`;
-    if (days < 7) return `${days}d`;
-    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const formatCurrency = (val: number) => '₹' + Math.abs(val || 0).toLocaleString('en-IN');
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       
       {/* Header */}
-      <View className="px-5 pt-4 pb-4 border-b border-neutral-100">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-neutral-900 text-xl font-semibold">Notifications</Text>
-            {unreadCount > 0 && (
-              <Text className="text-indigo-600 text-xs mt-0.5">{unreadCount} new</Text>
-            )}
+      <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{t('alerts.title')}</Text>
+          <View style={{ backgroundColor: colors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+            <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600' }}>{notifications.filter(n => !n.is_read).length}</Text>
           </View>
-          <TouchableOpacity className="w-9 h-9 rounded-full bg-neutral-100 items-center justify-center">
-            <Ionicons name="settings-outline" size={16} color="#525252" />
-          </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView 
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
       >
-        <View className="px-5 py-4">
-          {loading ? (
-            <ActivityIndicator size="large" color="#171717" className="mt-10" />
-          ) : notifications.length === 0 ? (
-            <View className="items-center py-20">
-              <Ionicons name="notifications-off-outline" size={48} color="#d4d4d4" />
-              <Text className="text-neutral-900 font-semibold text-lg mt-4">All caught up</Text>
-              <Text className="text-neutral-400 text-sm mt-1">No notifications right now</Text>
+        {loading ? (
+          <View style={{ alignItems: 'center', paddingVertical: 64 }}>
+            <Text style={{ color: colors.textSecondary }}>Loading...</Text>
+          </View>
+        ) : notifications.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: 80 }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+              <Ionicons name="notifications-off-outline" size={36} color={colors.textSecondary} />
             </View>
-          ) : (
-            notifications.map((item, idx) => {
-              const isMilk = item.type === 'MILK' || item.type === 'entry';
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>{t('all.caught.up')}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{t('no.notifications')}</Text>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 100 }}>
+            {notifications.map((item, idx) => {
+              const isMilk = item.type?.toLowerCase()?.includes('milk') || item.type?.toLowerCase()?.includes('entry');
               return (
                 <View 
-                  key={item.id} 
-                  className={`py-4 ${idx !== 0 ? 'border-t border-neutral-100' : ''}`}
+                  key={item.id}
+                  style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'flex-start', 
+                    paddingVertical: 16, 
+                    borderTopWidth: idx !== 0 ? 1 : 0, 
+                    borderTopColor: colors.border
+                  }}
                 >
-                  <View className="flex-row items-start">
-                    <View className={`w-10 h-10 rounded-full items-center justify-center ${isMilk ? 'bg-indigo-50' : 'bg-emerald-50'}`}>
-                      <Ionicons name={isMilk ? 'water' : 'card'} size={18} color={isMilk ? '#4f46e5' : '#10b981'} />
-                    </View>
-                    
-                    <View className="flex-1 ml-3">
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-neutral-900 font-medium text-sm flex-1" numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                        <Text className="text-neutral-400 text-[10px] ml-2">{formatTimeAgo(item.created_at)}</Text>
-                      </View>
-                      
-                      <Text className="text-neutral-500 text-xs mt-1 leading-4" numberOfLines={2}>
-                        {item.message}
-                      </Text>
-                      
-                      {item.amount && (
-                        <View className="mt-2 self-start bg-emerald-50 px-2.5 py-1 rounded-md">
-                          <Text className="text-emerald-700 text-xs font-semibold">
-                            ₹{item.amount.toLocaleString('en-IN')}
-                          </Text>
-                        </View>
+                  <View 
+                    style={{ 
+                      width: 40, 
+                      height: 40, 
+                      borderRadius: 20, 
+                      backgroundColor: isMilk ? '#e0e7ff' : '#ecfdf5',
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    <Ionicons name={isMilk ? 'water-outline' : 'card-outline'} size={18} color={isMilk ? '#4f46e5' : '#10b981'} />
+                  </View>
+                  
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14, flex: 1 }}>{item.title}</Text>
+                      {!item.is_read && (
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginLeft: 8 }} />
                       )}
                     </View>
-                    
-                    {!item.is_read && (
-                      <View className="w-2 h-2 bg-indigo-500 rounded-full ml-2 mt-1.5" />
-                    )}
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4, lineHeight: 18 }}>{item.message}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{formatTimeAgo(item.created_at)}</Text>
+                      {item.amount && (
+                        <Text style={{ color: colors.success, fontWeight: '600', fontSize: 13 }}>{formatCurrency(item.amount)}</Text>
+                      )}
+                    </View>
                   </View>
                 </View>
               );
-            })
-          )}
-        </View>
-        
-        <View className="h-24" />
+            })}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

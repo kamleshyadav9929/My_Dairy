@@ -5,15 +5,7 @@ type Language = 'en' | 'hi';
 
 const translations = {
   en: {
-    // Navigation & Pages
-    'dashboard.title': 'Dashboard',
-    'passbook.title': 'Passbook',
-    'alerts.title': 'Notifications',
-    'profile.title': 'Profile',
-    'settings.title': 'Settings',
-    'logout': 'Logout',
-    
-    // Bottom Navigation
+    // Navigation
     'nav.home': 'Home',
     'nav.passbook': 'Passbook',
     'nav.alerts': 'Alerts',
@@ -25,6 +17,7 @@ const translations = {
     'greeting.evening': 'Good Evening',
     
     // Dashboard
+    'dashboard.title': 'Dashboard',
     'today.collection': "Today's Collection",
     'total.earnings': 'Total Earnings',
     'total.milk': 'Total Milk',
@@ -38,19 +31,19 @@ const translations = {
     'balance': 'Balance',
     'this.month': 'This Month',
     'view.all': 'View All',
-    
-    // Milk Details
     'morning': 'Morning',
     'evening': 'Evening',
     'milk.fat': 'Fat',
     'milk.snf': 'SNF',
-    'milk.amount': 'Amount',
-    'litres': 'L',
     'milk.collection': 'Milk Collection',
     'payment.received': 'Payment Received',
     'no.collection': 'No collection yet',
+    'active': 'Active',
+    'see.all': 'See All',
+    'no.payments': 'No recent payments',
     
     // Passbook
+    'passbook.title': 'Passbook',
     'current.balance': 'Current Balance',
     'earned': 'Earned',
     'received': 'Received',
@@ -59,7 +52,14 @@ const translations = {
     'payments': 'Payments',
     'no.transactions': 'No transactions',
     
+    // Alerts
+    'alerts.title': 'Notifications',
+    'all.caught.up': 'All caught up!',
+    'no.notifications': 'No notifications right now',
+    
     // Profile
+    'profile.title': 'Profile',
+    'settings': 'SETTINGS',
     'push.notifications': 'Push Notifications',
     'notifications.desc': 'Receive alerts for entries & payments',
     'language': 'Language',
@@ -67,12 +67,16 @@ const translations = {
     'light': 'Light',
     'dark': 'Dark',
     'system': 'System',
+    'logout': 'Logout',
     'logout.confirm': 'Are you sure you want to logout?',
     'cancel': 'Cancel',
+    'select.language': 'Select Language',
+    'select.theme': 'Select Theme',
+    'version': 'My Dairy v1.0.0',
     
     // Login
     'welcome.back': 'Welcome Back',
-    'login.subtitle': 'Login to your dairy account',
+    'login.subtitle': 'Login to your dairy account to view entries and payments',
     'customer.id': 'Customer ID / Phone',
     'enter.id': 'Enter your ID',
     'password': 'Password',
@@ -80,23 +84,9 @@ const translations = {
     'login': 'Login',
     'no.account': "Don't have an account?",
     'contact.admin': 'Contact Administrator',
-    
-    // Alerts
-    'all.caught.up': 'All caught up!',
-    'no.notifications': 'No notifications right now',
-    'active': 'Active',
-    'see.all': 'See All',
   },
   hi: {
-    // Navigation & Pages
-    'dashboard.title': 'डैशबोर्ड',
-    'passbook.title': 'पासबुक',
-    'alerts.title': 'सूचनाएं',
-    'profile.title': 'प्रोफाइल',
-    'settings.title': 'सेटिंग्स',
-    'logout': 'लॉग आउट',
-    
-    // Bottom Navigation
+    // Navigation
     'nav.home': 'होम',
     'nav.passbook': 'पासबुक',
     'nav.alerts': 'अलर्ट',
@@ -108,6 +98,7 @@ const translations = {
     'greeting.evening': 'शुभ संध्या',
     
     // Dashboard
+    'dashboard.title': 'डैशबोर्ड',
     'today.collection': 'आज का संग्रह',
     'total.earnings': 'कुल कमाई',
     'total.milk': 'कुल दूध',
@@ -121,19 +112,19 @@ const translations = {
     'balance': 'बैलेंस',
     'this.month': 'इस महीने',
     'view.all': 'सभी देखें',
-    
-    // Milk Details
     'morning': 'सुबह',
     'evening': 'शाम',
     'milk.fat': 'फैट',
     'milk.snf': 'SNF',
-    'milk.amount': 'राशि',
-    'litres': 'ली',
     'milk.collection': 'दूध संग्रह',
     'payment.received': 'भुगतान प्राप्त',
     'no.collection': 'अभी तक कोई संग्रह नहीं',
+    'active': 'सक्रिय',
+    'see.all': 'सभी देखें',
+    'no.payments': 'कोई हाल का भुगतान नहीं',
     
     // Passbook
+    'passbook.title': 'पासबुक',
     'current.balance': 'वर्तमान बैलेंस',
     'earned': 'कमाई',
     'received': 'प्राप्त',
@@ -142,19 +133,30 @@ const translations = {
     'payments': 'भुगतान',
     'no.transactions': 'कोई लेनदेन नहीं',
     
+    // Alerts
+    'alerts.title': 'सूचनाएं',
+    'all.caught.up': 'सब पढ़ लिया!',
+    'no.notifications': 'अभी कोई सूचना नहीं',
+    
     // Profile
+    'profile.title': 'प्रोफाइल',
+    'settings': 'सेटिंग्स',
     'push.notifications': 'पुश नोटिफिकेशन',
-    'notifications.desc': 'एंट्री और भुगतान के लिए अलर्ट प्राप्त करें',
+    'notifications.desc': 'एंट्री और भुगतान के लिए अलर्ट',
     'language': 'भाषा',
     'theme': 'थीम',
     'light': 'लाइट',
     'dark': 'डार्क',
     'system': 'सिस्टम',
+    'logout': 'लॉगआउट',
     'logout.confirm': 'क्या आप लॉगआउट करना चाहते हैं?',
     'cancel': 'रद्द करें',
+    'select.language': 'भाषा चुनें',
+    'select.theme': 'थीम चुनें',
+    'version': 'माय डेयरी v1.0.0',
     
     // Login
-    'welcome.back': 'वापसी पर स्वागत है',
+    'welcome.back': 'स्वागत है',
     'login.subtitle': 'अपने डेयरी खाते में लॉगिन करें',
     'customer.id': 'ग्राहक आईडी / फ़ोन',
     'enter.id': 'अपना आईडी दर्ज करें',
@@ -163,21 +165,15 @@ const translations = {
     'login': 'लॉगिन',
     'no.account': 'खाता नहीं है?',
     'contact.admin': 'एडमिन से संपर्क करें',
-    
-    // Alerts
-    'all.caught.up': 'सब पढ़ लिया!',
-    'no.notifications': 'अभी कोई सूचना नहीं',
-    'active': 'सक्रिय',
-    'see.all': 'सभी देखें',
   }
 };
 
-type TranslationKey = keyof typeof translations['en'];
+type TranslationKeys = keyof typeof translations['en'];
 
 interface I18nContextType {
   language: Language;
   changeLanguage: (lang: Language) => Promise<void>;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKeys) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
@@ -192,7 +188,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const loadLanguage = async () => {
     try {
-      const savedLang = await AsyncStorage.getItem('language');
+      const savedLang = await AsyncStorage.getItem('app_language');
       if (savedLang === 'hi' || savedLang === 'en') {
         setLanguage(savedLang);
       }
@@ -205,10 +201,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const changeLanguage = useCallback(async (lang: Language) => {
     setLanguage(lang);
-    await AsyncStorage.setItem('language', lang);
+    await AsyncStorage.setItem('app_language', lang);
   }, []);
 
-  const t = useCallback((key: TranslationKey): string => {
+  const t = useCallback((key: TranslationKeys): string => {
     return translations[language][key] || key;
   }, [language]);
 
@@ -230,3 +226,5 @@ export const useI18n = () => {
   }
   return context;
 };
+
+export type { Language, TranslationKeys };

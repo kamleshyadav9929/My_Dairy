@@ -2,11 +2,15 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../context/I18nContext';
+import { useTheme } from '../context/ThemeContext';
 import { customerPortalApi } from '../lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
+  const { t } = useI18n();
+  const { colors, isDark } = useTheme();
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -46,84 +50,82 @@ export default function DashboardScreen() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return t('greeting.morning');
+    if (hour < 17) return t('greeting.afternoon');
+    return t('greeting.evening');
   };
 
   const todayDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-
-  // Fix: API returns 'qty' not 'quantity_litre'
   const morningQty = todayCollection?.morning?.qty || todayCollection?.morning?.quantity_litre || 0;
   const eveningQty = todayCollection?.evening?.qty || todayCollection?.evening?.quantity_litre || 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-100">
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       
       <ScrollView 
-        className="flex-1"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#000" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
       >
         {/* Header */}
-        <View className="px-5 pt-4 pb-4 bg-neutral-100">
-          <View className="flex-row items-center justify-between">
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, backgroundColor: colors.background }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View>
-              <View className="flex-row items-center">
-                <Ionicons name="sunny-outline" size={14} color="#737373" />
-                <Text className="ml-1.5 text-neutral-500 text-xs">{getGreeting()}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="sunny-outline" size={14} color={colors.textSecondary} />
+                <Text style={{ marginLeft: 6, color: colors.textSecondary, fontSize: 12 }}>{getGreeting()}</Text>
               </View>
-              <Text className="text-neutral-900 text-xl font-bold mt-0.5">{user?.name || 'Customer'}</Text>
+              <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', marginTop: 2 }}>{user?.name || 'Customer'}</Text>
             </View>
             <TouchableOpacity 
               onPress={onRefresh}
-              className="w-10 h-10 rounded-full bg-white items-center justify-center border border-neutral-200"
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
             >
-              <Ionicons name="refresh" size={18} color="#404040" />
+              <Ionicons name="refresh" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Overview Card */}
-        <View className="mx-5 bg-neutral-50 rounded-2xl p-5 border border-neutral-100">
-          <View className="flex-row items-center justify-between mb-3">
-            <View className="flex-row items-center">
-              <Ionicons name="wallet-outline" size={16} color="#737373" />
-              <Text className="ml-2 text-neutral-500 text-xs font-medium">This Month</Text>
+        <View style={{ marginHorizontal: 20, backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="wallet-outline" size={16} color={colors.textSecondary} />
+              <Text style={{ marginLeft: 8, color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>{t('this.month')}</Text>
             </View>
             <TouchableOpacity 
               onPress={() => navigation.navigate('Passbook')}
-              className="flex-row items-center"
+              style={{ flexDirection: 'row', alignItems: 'center' }}
             >
-              <Text className="text-indigo-600 text-xs font-medium mr-1">View All</Text>
-              <Ionicons name="chevron-forward" size={12} color="#4f46e5" />
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '500', marginRight: 4 }}>{t('view.all')}</Text>
+              <Ionicons name="chevron-forward" size={12} color={colors.primary} />
             </TouchableOpacity>
           </View>
           
-          <Text className="text-neutral-900 text-3xl font-bold">
+          <Text style={{ color: colors.text, fontSize: 30, fontWeight: '700' }}>
             {formatCurrency(dashboardData?.totalAmount || 0)}
           </Text>
-          <Text className="text-neutral-400 text-xs mt-1">Total Earnings</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>{t('total.earnings')}</Text>
           
-          <View className="flex-row mt-5 pt-4 border-t border-neutral-200">
-            <View className="flex-1">
-              <Text className="text-neutral-400 text-[10px] tracking-wide">MILK</Text>
-              <Text className="text-neutral-900 text-base font-semibold mt-0.5">
-                {(dashboardData?.totalMilkQty || 0).toFixed(1)} <Text className="text-xs text-neutral-400 font-normal">L</Text>
+          <View style={{ flexDirection: 'row', marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1 }}>{t('total.milk').toUpperCase()}</Text>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 4 }}>
+                {(dashboardData?.totalMilkQty || 0).toFixed(1)} <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '400' }}>L</Text>
               </Text>
             </View>
-            <View className="w-px bg-neutral-200" />
-            <View className="flex-1 pl-4">
-              <Text className="text-neutral-400 text-[10px] tracking-wide">DAYS</Text>
-              <Text className="text-neutral-900 text-base font-semibold mt-0.5">
+            <View style={{ width: 1, backgroundColor: colors.border }} />
+            <View style={{ flex: 1, paddingLeft: 16 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1 }}>{t('pouring.days').toUpperCase()}</Text>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 4 }}>
                 {dashboardData?.pouringDays || 0}
               </Text>
             </View>
-            <View className="w-px bg-neutral-200" />
-            <View className="flex-1 pl-4">
-              <Text className="text-neutral-400 text-[10px] tracking-wide">BALANCE</Text>
-              <Text className="text-emerald-600 text-base font-semibold mt-0.5">
+            <View style={{ width: 1, backgroundColor: colors.border }} />
+            <View style={{ flex: 1, paddingLeft: 16 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 10, letterSpacing: 1 }}>{t('balance').toUpperCase()}</Text>
+              <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600', marginTop: 4 }}>
                 {formatCurrency(passbook?.balance || 0)}
               </Text>
             </View>
@@ -131,52 +133,51 @@ export default function DashboardScreen() {
         </View>
 
         {/* Today's Collection Card */}
-        <View className="mx-5 mt-4 bg-white rounded-2xl p-5">
-          <View className="flex-row items-center justify-between mb-5">
-            <Text className="text-neutral-900 text-base font-bold">Today's Collection</Text>
-            <Text className="text-neutral-400 text-xs">{todayDate}</Text>
+        <View style={{ marginHorizontal: 20, marginTop: 16, backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{t('today.collection')}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{todayDate}</Text>
           </View>
           
           {/* Morning Row */}
-          <View className="flex-row items-center mb-4">
-            <View className="w-12 h-12 rounded-full bg-amber-50 items-center justify-center">
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#fef3c7', alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="sunny" size={22} color="#f59e0b" />
             </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-neutral-900 font-semibold">Morning</Text>
-              <Text className="text-neutral-400 text-xs mt-0.5">
-                Fat: {todayCollection?.morning?.fat || '—'}% · SNF: {todayCollection?.morning?.snf || '—'}%
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>{t('morning')}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                {t('milk.fat')}: {todayCollection?.morning?.fat || '—'}% · {t('milk.snf')}: {todayCollection?.morning?.snf || '—'}%
               </Text>
             </View>
-            <View className="items-end">
-              <Text className="text-neutral-900 font-bold">
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: colors.text, fontWeight: '700' }}>
                 {morningQty > 0 ? `${morningQty.toFixed(1)} L` : '— L'}
               </Text>
-              <Text className="text-emerald-600 text-sm font-semibold">
+              <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
                 {formatCurrency(todayCollection?.morning?.amount || 0)}
               </Text>
             </View>
           </View>
 
-          {/* Divider */}
-          <View className="h-px bg-neutral-100 mb-4" />
+          <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 16 }} />
 
           {/* Evening Row */}
-          <View className="flex-row items-center">
-            <View className="w-12 h-12 rounded-full bg-indigo-50 items-center justify-center">
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="moon" size={20} color="#6366f1" />
             </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-neutral-900 font-semibold">Evening</Text>
-              <Text className="text-neutral-400 text-xs mt-0.5">
-                Fat: {todayCollection?.evening?.fat || '—'}% · SNF: {todayCollection?.evening?.snf || '—'}%
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>{t('evening')}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                {t('milk.fat')}: {todayCollection?.evening?.fat || '—'}% · {t('milk.snf')}: {todayCollection?.evening?.snf || '—'}%
               </Text>
             </View>
-            <View className="items-end">
-              <Text className="text-neutral-900 font-bold">
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: colors.text, fontWeight: '700' }}>
                 {eveningQty > 0 ? `${eveningQty.toFixed(1)} L` : '— L'}
               </Text>
-              <Text className="text-emerald-600 text-sm font-semibold">
+              <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
                 {formatCurrency(todayCollection?.evening?.amount || 0)}
               </Text>
             </View>
@@ -184,30 +185,27 @@ export default function DashboardScreen() {
         </View>
 
         {/* Collection Trends Card */}
-        <View className="mx-5 mt-4 bg-white rounded-2xl p-5">
-          <View className="flex-row items-center justify-between mb-4">
+        <View style={{ marginHorizontal: 20, marginTop: 16, backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <View>
-              <Text className="text-neutral-900 text-base font-bold">Collection Trends</Text>
-              <Text className="text-neutral-400 text-xs mt-0.5">Last 7 days</Text>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{t('collection.trends')}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>{t('last.7.days')}</Text>
             </View>
-            <View className="flex-row items-center bg-emerald-50 px-2.5 py-1 rounded-full">
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
               <Ionicons name="trending-up" size={12} color="#10b981" />
-              <Text className="text-emerald-600 text-xs font-semibold ml-1">Active</Text>
+              <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '600', marginLeft: 4 }}>{t('active')}</Text>
             </View>
           </View>
           
-          {/* Chart */}
-          <View className="flex-row">
-            {/* Y-axis labels */}
-            <View className="w-6 justify-between pr-2 items-end" style={{ height: 100 }}>
-              <Text className="text-neutral-300 text-[9px]">20</Text>
-              <Text className="text-neutral-300 text-[9px]">15</Text>
-              <Text className="text-neutral-300 text-[9px]">10</Text>
-              <Text className="text-neutral-300 text-[9px]">5</Text>
+          <View style={{ flexDirection: 'row' }}>
+            <View style={{ width: 24, justifyContent: 'space-between', paddingRight: 8, alignItems: 'flex-end', height: 100 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 9 }}>20</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 9 }}>15</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 9 }}>10</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 9 }}>5</Text>
             </View>
             
-            {/* Bars */}
-            <View className="flex-1 flex-row items-end justify-between" style={{ height: 100 }}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 100 }}>
               {(trends.length > 0 ? trends.slice(-7) : Array(7).fill({ totalQty: 0 })).map((day: any, i: number) => {
                 const maxQty = Math.max(...trends.map((d: any) => d.totalQty || 0), 20);
                 const height = ((day.totalQty || 0) / maxQty) * 80;
@@ -217,12 +215,16 @@ export default function DashboardScreen() {
                   : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i];
                 
                 return (
-                  <View key={i} className="items-center flex-1">
+                  <View key={i} style={{ alignItems: 'center', flex: 1 }}>
                     <View 
-                      className={`w-8 rounded-lg ${isToday ? 'bg-indigo-500' : 'bg-indigo-100'}`}
-                      style={{ height: Math.max(height, 8) }}
+                      style={{ 
+                        width: 32, 
+                        borderRadius: 8, 
+                        backgroundColor: isToday ? colors.primary : (isDark ? '#3f3f46' : '#e0e7ff'),
+                        height: Math.max(height, 8)
+                      }}
                     />
-                    <Text className="text-neutral-400 text-[9px] mt-2 font-medium">{dayName}</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 9, marginTop: 8, fontWeight: '500' }}>{dayName}</Text>
                   </View>
                 );
               })}
@@ -231,32 +233,32 @@ export default function DashboardScreen() {
         </View>
 
         {/* Recent Payments Card */}
-        <View className="mx-5 mt-4 bg-white rounded-2xl p-5 mb-8">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-neutral-900 text-base font-bold">Recent Payments</Text>
+        <View style={{ marginHorizontal: 20, marginTop: 16, backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 32, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{t('recent.payments')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Passbook')}>
-              <Text className="text-indigo-600 text-xs font-medium">See All</Text>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '500' }}>{t('see.all')}</Text>
             </TouchableOpacity>
           </View>
           
           {recentPayments.length === 0 ? (
-            <View className="items-center py-4">
-              <Ionicons name="card-outline" size={32} color="#d4d4d4" />
-              <Text className="text-neutral-400 text-xs mt-2">No recent payments</Text>
+            <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+              <Ionicons name="card-outline" size={32} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>{t('no.payments')}</Text>
             </View>
           ) : (
             recentPayments.map((payment: any, idx: number) => (
-              <View key={payment.id || idx} className={`flex-row items-center ${idx > 0 ? 'mt-4 pt-4 border-t border-neutral-100' : ''}`}>
-                <View className="w-10 h-10 rounded-full bg-emerald-50 items-center justify-center">
+              <View key={payment.id || idx} style={{ flexDirection: 'row', alignItems: 'center', marginTop: idx > 0 ? 16 : 0, paddingTop: idx > 0 ? 16 : 0, borderTopWidth: idx > 0 ? 1 : 0, borderTopColor: colors.border }}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#ecfdf5', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="card" size={18} color="#10b981" />
                 </View>
-                <View className="flex-1 ml-3">
-                  <Text className="text-neutral-900 font-medium">Payment Received</Text>
-                  <Text className="text-neutral-400 text-xs mt-0.5">
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ color: colors.text, fontWeight: '500' }}>{t('payment.received')}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
                     {new Date(payment.payment_date || payment.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </Text>
                 </View>
-                <Text className="text-emerald-600 font-bold">
+                <Text style={{ color: colors.success, fontWeight: '700' }}>
                   +{formatCurrency(payment.amount)}
                 </Text>
               </View>
@@ -264,7 +266,7 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        <View className="h-24" />
+        <View style={{ height: 80 }} />
       </ScrollView>
     </SafeAreaView>
   );
