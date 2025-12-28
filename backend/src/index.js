@@ -33,10 +33,10 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 app.use(cors({
-    origin: function(origin, callback) {
+    origin: function (origin, callback) {
         // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
-        
+
         if (allowedOrigins.includes(origin) || process.env.CORS_ORIGIN === '*') {
             callback(null, true);
         } else {
@@ -51,17 +51,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check
 app.get('/api/health', (req, res) => {
-    // Try to initialize Firebase to check status
-    const firebaseStatus = notificationService.initializeFirebase();
-    
-    res.json({ 
-        status: 'ok', 
+    res.json({
+        status: 'ok',
         timestamp: new Date().toISOString(),
         database: 'supabase',
         amcu: amcuService.getStatus(),
-        firebase: {
-            initialized: firebaseStatus,
-            hasEnvVar: !!process.env.FIREBASE_SERVICE_ACCOUNT
+        notifications: {
+            provider: 'expo',
+            ready: true
         }
     });
 });
