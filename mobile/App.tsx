@@ -29,9 +29,9 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          height: 70,
-          paddingBottom: 15,
-          paddingTop: 10,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
           borderTopColor: '#f1f5f9',
@@ -41,16 +41,16 @@ function TabNavigator() {
         tabBarActiveTintColor: '#4f46e5',
         tabBarInactiveTintColor: '#94a3b8',
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: 'Inter_600SemiBold',
+          fontSize: 10,
+          fontFamily: 'Inter_500Medium',
         },
-        tabBarIcon: ({ color, size }) => {
-          let iconName: any = 'home';
-          if (route.name === 'Home') iconName = 'home';
-          if (route.name === 'Passbook') iconName = 'document-text';
-          if (route.name === 'Alerts') iconName = 'notifications';
-          if (route.name === 'Profile') iconName = 'person';
-          return <Ionicons name={iconName} size={size} color={color} />;
+        tabBarIcon: ({ color, focused, size }) => {
+          let iconName: any;
+          if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'Passbook') iconName = focused ? 'document-text' : 'document-text-outline';
+          else if (route.name === 'Alerts') iconName = focused ? 'notifications' : 'notifications-outline';
+          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+          return <Ionicons name={iconName} size={22} color={color} />;
         },
       })}
     >
