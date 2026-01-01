@@ -89,6 +89,9 @@ export default function DashboardScreen() {
 
   useEffect(() => { fetchData(); }, [isConnected]);
 
+  const formatCurrency = (val: number) => '₹' + (val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchData();

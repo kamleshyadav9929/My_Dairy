@@ -96,11 +96,6 @@ export default function AlertsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
       >
-      <ScrollView 
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
-      >
         {loading ? (
           <AlertsSkeleton />
         ) : notifications.length === 0 ? (
