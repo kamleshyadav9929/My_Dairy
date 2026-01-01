@@ -1,5 +1,5 @@
 import "./global.css";
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { View, ActivityIndicator, Text, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -22,7 +22,10 @@ import AlertsScreen from './src/screens/AlertsScreen';
 import { registerForPushNotificationsAsync } from './src/lib/notificationUtils';
 import { customerPortalApi } from './src/lib/api';
 
-SplashScreen.preventAutoHideAsync();
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -125,6 +128,20 @@ function Navigation() {
   );
 }
 
+// Component to handle hiding splash screen when mounted (meaning all providers are ready)
+function AppContent() {
+  useEffect(() => {
+    // Hide splash screen once we are mounted
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  return (
+    <AuthProvider>
+      <Navigation />
+    </AuthProvider>
+  );
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -133,24 +150,17 @@ export default function App() {
     Inter_700Bold,
   });
 
-  const onLayoutRootView = useCallback(async () => {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
     if (fontsLoaded) {
-      await SplashScreen.hideAsync();
+      setIsReady(true);
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
+  if (!isReady) {
     return null;
   }
-
-  const defaultFontStyle = { fontFamily: 'Inter_400Regular' };
-  const originalRender = Text.render;
-  Text.render = function (...args: any) {
-    const origin = originalRender.call(this, ...args);
-    return React.cloneElement(origin, {
-      style: [defaultFontStyle, origin.props.style],
-    });
-  };
 
   return (
     <SafeAreaProvider>
@@ -158,11 +168,7 @@ export default function App() {
         <I18nProvider>
           <ThemeProvider>
             <StatusBar backgroundColor="#ffffff" barStyle="dark-content" translucent={false} />
-            <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-              <AuthProvider>
-                <Navigation />
-              </AuthProvider>
-            </View>
+            <AppContent />
           </ThemeProvider>
         </I18nProvider>
       </NetworkProvider>

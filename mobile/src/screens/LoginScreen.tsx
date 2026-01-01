@@ -71,9 +71,7 @@ export default function LoginScreen() {
             <Text style={{ fontSize: 28, fontWeight: '700', color: '#171717', marginTop: 24, marginBottom: 8 }}>
               Welcome Back
             </Text>
-            <Text style={{ fontSize: 14, color: '#737373', textAlign: 'center', lineHeight: 20 }}>
-              Login to your dairy account{'\n'}to view entries and payments
-            </Text>
+           
           </View>
 
           {/* Form */}
