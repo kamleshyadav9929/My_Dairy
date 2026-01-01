@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
@@ -127,7 +128,24 @@ export const generatePassbookPDF = async (data: PDFData) => {
 
   try {
     const { uri } = await Print.printToFileAsync({ html });
-    await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    
+    // Create a valid filename safely
+    const safeName = data.customer.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const dateStr = new Date().toISOString().split('T')[0];
+    const newFilename = `Passbook_${safeName}_${dateStr}.pdf`;
+    
+    // Use FileSystem to move/rename the file
+    const newUri = `${FileSystem.documentDirectory}${newFilename}`;
+    await FileSystem.moveAsync({
+      from: uri,
+      to: newUri
+    });
+
+    await Sharing.shareAsync(newUri, { 
+        UTI: '.pdf', 
+        mimeType: 'application/pdf',
+        dialogTitle: newFilename
+    });
   } catch (error) {
     console.error('PDF Generation Error:', error);
     throw error;

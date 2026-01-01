@@ -152,8 +152,8 @@ export default function AlertsScreen() {
                     ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                       {timeAgo ? <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{timeAgo}</Text> : <View />}
-                      {amountText ? (
-                        <Text style={{ color: colors.success, fontWeight: '600', fontSize: 13 }}>{amountText}</Text>
+                      {item.amount ? (
+                        <Text style={{ color: colors.success, fontWeight: '600', fontSize: 13 }}>{formatCurrency(item.amount)}</Text>
                       ) : null}
                     </View>
                   </View>

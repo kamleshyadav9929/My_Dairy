@@ -71,7 +71,7 @@ export default function PassbookScreen() {
           description: t.description || (t.type === 'MILK' ? 'Milk Collection' : 'Payment'),
           debit: t.debit || 0, credit: t.credit || 0, balance: t.balance || 0
         })),
-        summary: { totalLitres: summary.totalLitres || 0, totalAmount: summary.totalMilkAmount || 0, totalPayments: summary.totalPayments || 0, balance: summary.balance || 0 },
+        summary: { totalLitres: summary.totalMilk || 0, totalAmount: summary.totalAmount || 0, totalPayments: summary.totalPayments || 0, balance: summary.balance || 0 },
         period: { from: 'All Time', to: new Date().toLocaleDateString('en-IN') }
       });
     } catch { Alert.alert('Error', 'Failed to generate PDF.'); }
