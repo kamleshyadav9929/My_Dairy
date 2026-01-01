@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { useTheme } from '../context/ThemeContext';
 import { generatePassbookPDF } from '../lib/pdfUtils';
+import { PassbookSkeleton } from '../components/Skeleton';
 import { Ionicons } from '@expo/vector-icons';
 
 interface PassbookEntry {
@@ -113,6 +114,11 @@ export default function PassbookScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
       >
+        {loading && !summary ? (
+             <PassbookSkeleton />
+        ) : (
+            <>
+        {/* Balance Card */}
         {/* Balance Card */}
         <View style={{ marginHorizontal: 20, marginTop: 16, backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
@@ -162,9 +168,7 @@ export default function PassbookScreen() {
 
         {/* Transactions */}
         <View style={{ paddingHorizontal: 20, marginTop: 16, paddingBottom: 100 }}>
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.text} style={{ marginTop: 40 }} />
-          ) : list.length === 0 ? (
+          {list.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 64 }}>
               <Ionicons name="document-outline" size={40} color={colors.textSecondary} />
               <Text style={{ color: colors.textSecondary, marginTop: 12, fontWeight: '500' }}>{t('no.transactions')}</Text>
@@ -210,6 +214,8 @@ export default function PassbookScreen() {
             })
           )}
         </View>
+            </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

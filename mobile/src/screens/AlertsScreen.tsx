@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { customerPortalApi } from '../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { useTheme } from '../context/ThemeContext';
+import { AlertsSkeleton } from '../components/Skeleton';
 import { useNetwork } from '../context/NetworkContext';
 import { cacheService } from '../lib/cacheService';
 import { Ionicons } from '@expo/vector-icons';
@@ -95,10 +96,13 @@ export default function AlertsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
       >
+      <ScrollView 
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
+      >
         {loading ? (
-          <View style={{ alignItems: 'center', paddingVertical: 64 }}>
-            <Text style={{ color: colors.textSecondary }}>Loading...</Text>
-          </View>
+          <AlertsSkeleton />
         ) : notifications.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 80 }}>
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>

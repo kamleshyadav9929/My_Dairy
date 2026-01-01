@@ -10,6 +10,8 @@ import { customerPortalApi } from '../lib/api';
 import { cacheService } from '../lib/cacheService';
 import { Ionicons } from '@expo/vector-icons';
 
+import { DashboardSkeleton } from '../components/Skeleton';
+
 export default function DashboardScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
@@ -17,6 +19,7 @@ export default function DashboardScreen() {
   const { isConnected } = useNetwork();
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [todayCollection, setTodayCollection] = useState<any>(null);
   const [trends, setTrends] = useState<any[]>([]);
@@ -79,6 +82,8 @@ export default function DashboardScreen() {
       setTrends(cachedTrends || []);
       setPassbook(cachedPassbook);
       setRecentPayments(cachedPayments || []);
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -90,8 +95,15 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, [isConnected]);
 
-  const formatCurrency = (val: number) => '₹' + (val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+  if (loading && !dashboardData) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <DashboardSkeleton />
+      </SafeAreaView>
+    );
+  }
 
+  // Calculate greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return t('greeting.morning');
