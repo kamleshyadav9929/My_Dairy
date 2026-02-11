@@ -6,23 +6,24 @@ import { generatePassbookPDF } from '../../utils/pdfExport';
 import { generatePassbookShareMessage, shareNative } from '../utils/shareUtils';
 import { getCacheIgnoreExpiry, setCache, CACHE_KEYS } from '../../lib/cache';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { Download, Loader2, Milk, IndianRupee, Share2, ChevronLeft, ChevronRight, Sunrise, Moon } from 'lucide-react';
+import { Download, Loader2, Milk, IndianRupee, Share2, ChevronLeft, ChevronRight, Sunrise, Moon, Wallet, BookOpen } from 'lucide-react';
 
-// Skeleton Components
+// ─── Skeleton Components ─────────────────────────────────
 function SkeletonBalance() {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-100">
-      <div className="skeleton h-4 w-24 mb-2" />
-      <div className="skeleton h-10 w-36 mb-4" />
+    <div className="bg-white rounded-2xl p-5 border border-slate-100/80 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-lg bg-slate-100 animate-pulse" />
+        <div className="h-3 w-20 rounded-md bg-slate-100 animate-pulse" />
+      </div>
+      <div className="h-9 w-36 rounded-lg bg-slate-100 animate-pulse mb-4" />
       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-        <div>
-          <div className="skeleton h-3 w-14 mb-2" />
-          <div className="skeleton h-5 w-20" />
-        </div>
-        <div>
-          <div className="skeleton h-3 w-14 mb-2" />
-          <div className="skeleton h-5 w-20" />
-        </div>
+        {[0, 1].map(i => (
+          <div key={i}>
+            <div className="h-3 w-12 rounded bg-slate-100 animate-pulse mb-2" style={{ animationDelay: `${i * 80}ms` }} />
+            <div className="h-5 w-20 rounded bg-slate-100 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -30,19 +31,19 @@ function SkeletonBalance() {
 
 function SkeletonTransactions() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-100/80 shadow-sm overflow-hidden">
       <div className="p-4 border-b border-slate-100">
-        <div className="skeleton h-5 w-32" />
+        <div className="h-5 w-32 rounded-md bg-slate-100 animate-pulse" />
       </div>
       <div className="p-4 space-y-4">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="flex items-center gap-4">
-            <div className="skeleton w-10 h-10 rounded-full" />
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
             <div className="flex-1">
-              <div className="skeleton h-4 w-24 mb-2" />
-              <div className="skeleton h-3 w-16" />
+              <div className="h-4 w-24 rounded bg-slate-100 animate-pulse mb-2" style={{ animationDelay: `${i * 80}ms` }} />
+              <div className="h-3 w-16 rounded bg-slate-100 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
             </div>
-            <div className="skeleton h-5 w-16" />
+            <div className="h-5 w-16 rounded bg-slate-100 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
           </div>
         ))}
       </div>
@@ -247,52 +248,69 @@ export default function Passbook() {
 
   return (
     <div className="space-y-4 pb-4">
-      <h2 className="text-xl font-bold text-slate-800">{t('passbook.title')}</h2>
+      <h2 className="text-xl font-bold text-slate-800 tracking-tight"
+        style={{ animation: 'fadeSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both' }}>
+        {t('passbook.title')}
+      </h2>
 
       {/* Balance Card */}
       {data && (
-        <div className="bg-white rounded-2xl p-5 border border-slate-100">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100/80 shadow-sm"
+          style={{ animation: 'fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '50ms' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Wallet className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
               {t('current.balance')}
             </span>
           </div>
-          <h3 className="text-3xl font-bold text-slate-800 tracking-tight mb-3">
+          <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-3">
             {formatCurrency(data?.summary?.balance || 0)}
           </h3>
 
           {/* Earned / Received */}
-          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100 mb-4">
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100/80 mb-4">
             <div>
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{t('earned')}</p>
-              <p className="text-base font-semibold text-slate-800 mt-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="w-3.5 h-3.5 rounded bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <Milk className="w-2 h-2 text-white" />
+                </div>
+                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">{t('earned')}</p>
+              </div>
+              <p className="text-[15px] font-bold text-slate-800">
                 {formatCurrency(data?.summary?.totalMilkAmount || 0)}
               </p>
             </div>
-            <div>
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{t('received')}</p>
-              <p className="text-base font-semibold text-emerald-600 mt-1">
+            <div className="border-l border-slate-100/80 pl-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="w-3.5 h-3.5 rounded bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <IndianRupee className="w-2 h-2 text-white" />
+                </div>
+                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">{t('received')}</p>
+              </div>
+              <p className="text-[15px] font-bold text-emerald-600">
                 {formatCurrency(data?.summary?.totalPayments || 0)}
               </p>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleShare}
               disabled={!data?.transactions?.length}
-              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors disabled:opacity-50 tap-scale"
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[12px] font-semibold text-slate-600 transition-all active:scale-95 disabled:opacity-40"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-3.5 h-3.5" />
               Share
             </button>
             <button
               onClick={handleDownloadPDF}
               disabled={downloading || !data?.transactions?.length}
-              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors disabled:opacity-50 tap-scale"
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl text-[12px] font-semibold text-slate-600 transition-all active:scale-95 disabled:opacity-40"
             >
-              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               PDF
             </button>
           </div>
@@ -368,77 +386,100 @@ export default function Passbook() {
       </div>
 
       {/* Transactions Timeline */}
-      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100/80 shadow-sm overflow-hidden"
+        style={{ animation: 'fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '200ms' }}>
         {loading ? (
-          <div className="p-8 flex flex-col items-center justify-center text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin mb-2" />
-            <p className="text-xs">{t('loading')}</p>
+          <div className="p-10 flex flex-col items-center justify-center text-slate-300">
+            <Loader2 className="w-6 h-6 animate-spin mb-2 text-indigo-400" />
+            <p className="text-xs font-medium">{t('loading')}</p>
           </div>
         ) : Object.keys(groupedTransactions).length === 0 ? (
-          <div className="p-8 text-center text-slate-400">
-            <p className="text-sm">{t('no.data')}</p>
+          <div className="p-10 flex flex-col items-center text-slate-300">
+            <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-3">
+              <BookOpen className="w-7 h-7" />
+            </div>
+            <p className="text-sm font-medium text-slate-400">{t('no.transactions')}</p>
+            <p className="text-[11px] text-slate-300 mt-1">{t('no.data')}</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-slate-50/80">
             {Object.entries(groupedTransactions).map(([date, transactions]) => (
               <div key={date}>
                 {/* Date Header */}
-                <div className="px-4 py-2 bg-slate-50/50 sticky top-0">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    {formatDateLabel(date)}
-                  </p>
+                <div className="px-4 py-2 bg-slate-50/60 sticky top-0 backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      {formatDateLabel(date)}
+                    </p>
+                  </div>
                 </div>
                 
                 {/* Transactions for this date */}
-                {transactions.map((row: any, idx: number) => (
-                  <div key={row.id || idx} className="px-4 py-4 flex items-center gap-4">
-                    {/* Icon */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      row.type === 'MILK' 
-                        ? row.details?.shift === 'M' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'
-                        : 'bg-emerald-50 text-emerald-600'
-                    }`}>
-                      {row.type === 'MILK' ? (
-                        row.details?.shift === 'M' ? <Sunrise className="w-5 h-5" /> : <Moon className="w-5 h-5" />
-                      ) : (
-                        <IndianRupee className="w-5 h-5" />
-                      )}
+                {transactions.map((row: any, idx: number) => {
+                  const isMilk = row.type === 'MILK';
+                  const isMorning = row.details?.shift === 'M';
+                  const gradient = isMilk
+                    ? isMorning ? 'from-amber-400 to-orange-500' : 'from-indigo-400 to-violet-500'
+                    : 'from-emerald-400 to-teal-500';
+                  const shadowColor = isMilk
+                    ? isMorning ? 'shadow-amber-500/15' : 'shadow-indigo-500/15'
+                    : 'shadow-emerald-500/15';
+
+                  return (
+                    <div key={row.id || idx} className="px-4 py-3.5 flex items-center gap-3 group hover:bg-slate-50/50 transition-colors">
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 shadow-lg ${shadowColor} group-hover:scale-105 transition-transform duration-300`}>
+                        {isMilk ? (
+                          isMorning ? <Sunrise className="w-[18px] h-[18px] text-white" /> : <Moon className="w-[18px] h-[18px] text-white" />
+                        ) : (
+                          <IndianRupee className="w-[18px] h-[18px] text-white" />
+                        )}
+                      </div>
+                      
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold text-slate-800">
+                          {isMilk 
+                            ? `${isMorning ? t('morning') : t('evening')} Collection`
+                            : t('payment.received')
+                          }
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                          {isMilk 
+                            ? `${row.details?.quantity_litre || 0}L · Fat: ${row.details?.fat || '—'}%`
+                            : row.description
+                          }
+                        </p>
+                      </div>
+                      
+                      {/* Amount */}
+                      <div className="text-right flex-shrink-0">
+                        <p className={`text-[13px] font-extrabold ${
+                          row.credit > 0 ? 'text-emerald-600' : 'text-slate-800'
+                        }`}>
+                          {row.credit > 0 ? '+' : '−'}{formatCurrency(row.credit || row.debit)}
+                        </p>
+                        <p className="text-[10px] text-slate-300 font-medium mt-0.5">
+                          Bal: {formatCurrency(row.balance)}
+                        </p>
+                      </div>
                     </div>
-                    
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-800 text-sm">
-                        {row.type === 'MILK' 
-                          ? `${row.details?.shift === 'M' ? t('morning') : t('evening')} Collection`
-                          : t('payment.received')
-                        }
-                      </p>
-                      <p className="text-xs text-slate-400 truncate">
-                        {row.type === 'MILK' 
-                          ? `${row.details?.quantity_litre || 0}L • Fat: ${row.details?.fat || '-'}%`
-                          : row.description
-                        }
-                      </p>
-                    </div>
-                    
-                    {/* Amount */}
-                    <div className="text-right flex-shrink-0">
-                      <p className={`font-bold text-sm ${
-                        row.credit > 0 ? 'text-emerald-600' : 'text-slate-800'
-                      }`}>
-                        {row.credit > 0 ? '+' : '-'}{formatCurrency(row.credit || row.debit)}
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        Bal: {formatCurrency(row.balance)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Keyframe */}
+      <style>{`
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
