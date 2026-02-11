@@ -6,15 +6,22 @@ import { useAuth } from '../../context/AuthContext';
 import { getCacheIgnoreExpiry, setCache, CACHE_KEYS } from '../../lib/cache';
 import { 
   Phone, MapPin, Hash, Milk, Calendar, ChevronRight, 
-  Globe, Newspaper, Info, LogOut, Check, User
+  Globe, Newspaper, Info, LogOut, Check, User, Bell, Palette, Sun, Moon, Monitor
 } from 'lucide-react';
 
 export default function Profile() {
   const { t, language, changeLanguage } = useI18n();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(() => getCacheIgnoreExpiry(CACHE_KEYS.PROFILE));
   const [showLanguage, setShowLanguage] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('notifications_enabled') !== 'false';
+  });
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('app_theme') || 'system';
+  });
 
   useEffect(() => {
     customerPortalApi.getProfile().then(res => {
@@ -26,6 +33,18 @@ export default function Profile() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleToggleNotifications = () => {
+    const newVal = !notificationsEnabled;
+    setNotificationsEnabled(newVal);
+    localStorage.setItem('notifications_enabled', String(newVal));
+  };
+
+  const handleThemeChange = (mode: string) => {
+    setTheme(mode);
+    localStorage.setItem('app_theme', mode);
+    setShowTheme(false);
   };
 
   if (!profile) {
@@ -62,20 +81,23 @@ export default function Profile() {
     <div className="space-y-4 pb-4">
       <h2 className="text-xl font-bold text-slate-800">{t('profile.title')}</h2>
       
-      {/* Profile Card - Simple */}
+      {/* Profile Card — matches mobile: circle avatar with initial, name + ID + phone */}
       <div className="bg-white rounded-2xl p-5 border border-slate-100">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
             <User className="w-8 h-8 text-slate-400" />
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-slate-800">{profile.name}</h3>
             <p className="text-sm text-slate-500">ID: {profile.amcuId}</p>
+            {profile.phone && (
+              <p className="text-xs text-slate-400 mt-0.5">{profile.phone}</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Details Card - Simple gray icons */}
+      {/* Details Card */}
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
         <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
           <h4 className="font-semibold text-slate-700 text-sm">{t('personal.details')}</h4>
@@ -93,13 +115,36 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Settings */}
+      {/* Settings — matches mobile's settings section */}
       <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
         <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-          <h4 className="font-semibold text-slate-700 text-sm">{t('settings.title')}</h4>
+          <h4 className="font-semibold text-slate-700 text-sm">{t('settings')}</h4>
         </div>
         <div className="divide-y divide-slate-50">
-          {/* Language */}
+          {/* Push Notifications Toggle — matches mobile */}
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-slate-500" />
+              </div>
+              <div>
+                <p className="font-medium text-slate-800">{t('push.notifications')}</p>
+                <p className="text-xs text-slate-400">{t('notifications.desc')}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleToggleNotifications}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                notificationsEnabled ? 'bg-indigo-500' : 'bg-slate-300'
+              }`}
+            >
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                notificationsEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Language — matches mobile */}
           <button
             onClick={() => setShowLanguage(!showLanguage)}
             className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
@@ -109,7 +154,7 @@ export default function Profile() {
                 <Globe className="w-5 h-5 text-slate-500" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-slate-800">{t('app.language')}</p>
+                <p className="font-medium text-slate-800">{t('language')}</p>
                 <p className="text-xs text-slate-400">{language === 'en' ? 'English' : 'हिंदी'}</p>
               </div>
             </div>
@@ -124,7 +169,10 @@ export default function Profile() {
                   language === 'en' ? 'bg-slate-100 border-slate-200' : 'bg-white border-slate-100'
                 }`}
               >
-                <span className="font-medium text-slate-700">English</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">🇬🇧</span>
+                  <span className="font-medium text-slate-700">English</span>
+                </div>
                 {language === 'en' && <Check className="w-5 h-5 text-slate-600" />}
               </button>
               <button
@@ -133,9 +181,55 @@ export default function Profile() {
                   language === 'hi' ? 'bg-slate-100 border-slate-200' : 'bg-white border-slate-100'
                 }`}
               >
-                <span className="font-medium text-slate-700">हिंदी</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">🇮🇳</span>
+                  <span className="font-medium text-slate-700">हिंदी</span>
+                </div>
                 {language === 'hi' && <Check className="w-5 h-5 text-slate-600" />}
               </button>
+            </div>
+          )}
+
+          {/* Theme — matches mobile (light/dark/system) */}
+          <button
+            onClick={() => setShowTheme(!showTheme)}
+            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <Palette className="w-5 h-5 text-slate-500" />
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-slate-800">{t('theme')}</p>
+                <p className="text-xs text-slate-400">
+                  {theme === 'light' ? t('light') : theme === 'dark' ? t('dark') : t('system')}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className={`w-5 h-5 text-slate-300 transition-transform ${showTheme ? 'rotate-90' : ''}`} />
+          </button>
+
+          {showTheme && (
+            <div className="px-4 py-3 bg-slate-50/50 space-y-2">
+              {[
+                { key: 'light', label: t('light'), icon: Sun },
+                { key: 'dark', label: t('dark'), icon: Moon },
+                { key: 'system', label: t('system'), icon: Monitor },
+              ].map(opt => (
+                <button
+                  key={opt.key}
+                  onClick={() => handleThemeChange(opt.key)}
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                    theme === opt.key ? 'bg-slate-100 border-slate-200' : 'bg-white border-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <opt.icon className="w-4 h-4 text-slate-600" />
+                    <span className="font-medium text-slate-700">{opt.label}</span>
+                  </div>
+                  {theme === opt.key && <Check className="w-5 h-5 text-slate-600" />}
+                </button>
+              ))}
             </div>
           )}
 
@@ -169,17 +263,17 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Logout */}
+      {/* Logout — matches mobile: red-accent card */}
       <button
         onClick={handleLogout}
-        className="w-full bg-white rounded-2xl p-4 border border-slate-100 flex items-center justify-center gap-3 text-red-600 font-semibold hover:bg-red-50 transition-colors"
+        className="w-full bg-white rounded-2xl p-4 border border-slate-100 flex items-center justify-center gap-3 text-red-600 font-semibold hover:bg-red-50 transition-colors tap-scale"
       >
         <LogOut className="w-5 h-5" />
         {t('logout')}
       </button>
 
       <p className="text-center text-xs text-slate-400 pt-2">
-        {t('app.version')} 1.0.0
+        {t('version')}
       </p>
     </div>
   );
@@ -278,7 +372,7 @@ export function About() {
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-slate-500">Platform</span>
-            <span className="text-sm font-medium text-slate-800">Android</span>
+            <span className="text-sm font-medium text-slate-800">Web</span>
           </div>
         </div>
       </div>

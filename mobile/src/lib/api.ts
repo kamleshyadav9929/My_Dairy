@@ -43,7 +43,7 @@ export const customerPortalApi = {
   getNotifications: (params?: any) => api.get('/customer/me/notifications', { params }),
   getProfile: () => api.get('/customer/me/profile'),
   savePushToken: (token: string) => api.post('/notifications/register', { token, platform: Platform.OS }),
-  requestPasswordReset: (customerIdOrPhone: string) => api.post('/customer/auth/request-reset', { customerIdOrPhone }),
+  requestPasswordReset: (customerIdOrPhone: string) => api.post('/auth/request-reset', { customerId: customerIdOrPhone }),
 };
 
 

@@ -25,8 +25,11 @@ export function ForgotPasswordModal({ visible, onClose }: ForgotPasswordModalPro
       await customerPortalApi.requestPasswordReset(customerId.trim());
       setSubmitted(true);
     } catch (error: any) {
-      // Even if API fails, show success (request is queued for admin)
-      setSubmitted(true);
+      console.error('Reset request failed:', error);
+      const errorMessage = error.response?.data?.error || 
+                           error.response?.data?.message || 
+                           'Failed to submit request. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

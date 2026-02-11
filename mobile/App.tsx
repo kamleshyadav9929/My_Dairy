@@ -19,6 +19,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import PassbookScreen from './src/screens/PassbookScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
+import SlipManagerScreen from './src/screens/SlipManagerScreen';
 import { registerForPushNotificationsAsync } from './src/lib/notificationUtils';
 import { customerPortalApi } from './src/lib/api';
 
@@ -123,10 +124,15 @@ function Navigation() {
         ) : (
           <Stack.Screen name="Main" component={TabNavigator} />
         )}
+        <Stack.Screen name="SlipManager" component={SlipManagerScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 // Component to handle hiding splash screen when mounted (meaning all providers are ready)
 function AppContent() {
@@ -137,7 +143,9 @@ function AppContent() {
 
   return (
     <AuthProvider>
-      <Navigation />
+      <QueryClientProvider client={queryClient}>
+        <Navigation />
+      </QueryClientProvider>
     </AuthProvider>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar, Image, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { customerPortalApi } from '../lib/api';
@@ -11,6 +11,11 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  
+  // Focus states for "floating" label effect (simulated with border color)
+  const [idFocused, setIdFocused] = useState(false);
+  const [passFocused, setPassFocused] = useState(false);
+
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -50,54 +55,52 @@ export default function LoginScreen() {
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1, backgroundColor: '#ffffff' }}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       <ScrollView 
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 40 }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        bounces={false}
       >
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 60, justifyContent: 'center' }}>
-          {/* Logo */}
+        <View style={{ flex: 1, paddingHorizontal: 24, justifyContent: 'center', maxWidth: 450, width: '100%', alignSelf: 'center' }}>
+          
+          {/* Header Section */}
           <View style={{ alignItems: 'center', marginBottom: 40 }}>
             <Image 
               source={require('../../assets/icon.png')} 
-              style={{ width: 100, height: 100, borderRadius: 24 }}
+              style={{ width: 48, height: 48, marginBottom: 16 }}
               resizeMode="contain"
             />
-            <Text style={{ fontSize: 28, fontWeight: '700', color: '#171717', marginTop: 24, marginBottom: 8 }}>
-              Welcome Back
+            <Text style={{ fontSize: 24, fontWeight: '400', color: '#202124', marginBottom: 8 }}>
+              Sign in
             </Text>
-           
+            <Text style={{ fontSize: 16, color: '#202124' }}>
+              to continue to <Text style={{ fontWeight: '500' }}>My Dairy</Text>
+            </Text>
           </View>
 
-          {/* Form */}
+          {/* Form Section */}
           <View>
             {/* Customer ID Input */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#525252', marginBottom: 8, marginLeft: 4 }}>
-                Customer ID / Phone
-              </Text>
+            <View style={{ marginBottom: 24 }}>
               <View style={{ 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                backgroundColor: '#fafafa', 
                 borderWidth: 1, 
-                borderColor: '#e5e5e5', 
-                borderRadius: 16, 
-                paddingHorizontal: 16, 
-                height: 56 
+                borderColor: idFocused ? '#1a73e8' : '#dadce0', 
+                borderRadius: 4, 
+                paddingHorizontal: 13,
+                paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+                height: 56,
+                justifyContent: 'center'
               }}>
-                <Ionicons name="person-outline" size={20} color="#737373" />
                 <TextInput
-                  style={{ flex: 1, marginLeft: 12, fontSize: 16, color: '#171717' }}
-                  placeholder="Enter your ID"
-                  placeholderTextColor="#a3a3a3"
+                  style={{ fontSize: 16, color: '#202124' }}
+                  placeholder="Customer ID or Phone"
+                  placeholderTextColor="#5f6368"
                   value={customerId}
                   onChangeText={setCustomerId}
+                  onFocus={() => setIdFocused(true)}
+                  onBlur={() => setIdFocused(false)}
                   autoCapitalize="none"
                   keyboardType="default"
                   returnKeyType="next"
@@ -106,63 +109,74 @@ export default function LoginScreen() {
             </View>
 
             {/* Password Input */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 13, fontWeight: '500', color: '#525252', marginBottom: 8, marginLeft: 4 }}>
-                Password
-              </Text>
+            <View style={{ marginBottom: 8 }}>
               <View style={{ 
-                flexDirection: 'row', 
-                alignItems: 'center', 
-                backgroundColor: '#fafafa', 
                 borderWidth: 1, 
-                borderColor: '#e5e5e5', 
-                borderRadius: 16, 
-                paddingHorizontal: 16, 
-                height: 56 
+                borderColor: passFocused ? '#1a73e8' : '#dadce0', 
+                borderRadius: 4, 
+                paddingHorizontal: 13,
+                paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+                height: 56,
+                justifyContent: 'center',
+                flexDirection: 'row',
+                alignItems: 'center'
               }}>
-                <Ionicons name="lock-closed-outline" size={20} color="#737373" />
                 <TextInput
-                  style={{ flex: 1, marginLeft: 12, fontSize: 16, color: '#171717' }}
-                  placeholder="Enter password"
-                  placeholderTextColor="#a3a3a3"
+                  style={{ flex: 1, fontSize: 16, color: '#202124' }}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#5f6368"
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
+                  onFocus={() => setPassFocused(true)}
+                  onBlur={() => setPassFocused(false)}
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#737373" />
+                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#5f6368" />
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Forgot Password Link */}
-            <TouchableOpacity 
-              onPress={() => setShowForgotPassword(true)}
-              style={{ alignSelf: 'flex-end', marginBottom: 24 }}
-            >
-              <Text style={{ color: '#4f46e5', fontSize: 13, fontWeight: '500' }}>Forgot Password?</Text>
-            </TouchableOpacity>
+            <View style={{ marginBottom: 40, alignItems: 'flex-start' }}>
+              <TouchableOpacity onPress={() => setShowForgotPassword(true)}>
+                <Text style={{ color: '#1a73e8', fontSize: 14, fontWeight: '500' }}>
+                  Forgot password?
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-            {/* Login Button */}
-            <TouchableOpacity 
-              onPress={handleLogin}
-              disabled={loading}
-              style={{ 
-                height: 56, 
-                borderRadius: 16, 
-                backgroundColor: loading ? '#6366f1' : '#4f46e5', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>Login</Text>
-              )}
-            </TouchableOpacity>
+            {/* Actions */}
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+              {/* Optional: Create account link could go here if needed 
+              <TouchableOpacity>
+                 <Text style={{ color: '#1a73e8', fontSize: 14, fontWeight: '500' }}>Create account</Text>
+              </TouchableOpacity> 
+              */}
+              
+              <TouchableOpacity 
+                onPress={handleLogin}
+                disabled={loading}
+                style={{ 
+                  backgroundColor: '#1a73e8', 
+                  paddingVertical: 10, 
+                  paddingHorizontal: 24, 
+                  borderRadius: 4,
+                  minWidth: 80,
+                  alignItems: 'center',
+                  opacity: loading ? 0.7 : 1
+                }}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={{ color: '#ffffff', fontWeight: '500', fontSize: 14 }}>Next</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
           </View>
         </View>
       </ScrollView>

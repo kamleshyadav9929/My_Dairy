@@ -8,8 +8,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useNetwork } from '../context/NetworkContext';
 import { customerPortalApi } from '../lib/api';
 import { cacheService } from '../lib/cacheService';
+import { SlipStorage } from '../lib/slipStorage';
 import { Ionicons } from '@expo/vector-icons';
-
 import { DashboardSkeleton } from '../components/Skeleton';
 
 export default function DashboardScreen() {
@@ -39,10 +39,51 @@ export default function DashboardScreen() {
         ]);
         
         setDashboardData(summaryRes.data);
-        setTodayCollection(todayRes.data);
+        const todayData = todayRes.data;
+        setTodayCollection(todayData);
         setTrends(trendsRes.data || []);
         setPassbook(passbookRes.data.summary || {});
         setRecentPayments(paymentsRes.data.payments || []);
+
+        // GENERATE SLIPS FOR TODAY (Auto-Save)
+        // We use passbook entries because they provide distinct records (e.g. separate Cow/Buffalo entries)
+        // unlike todayCollection which is a summary.
+        const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const todaysTransactions = passbookRes.data?.transactions?.filter(
+          (t: any) => t.date === todayStr && t.type === 'MILK'
+        ) || [];
+
+        if (todaysTransactions.length > 0) {
+           todaysTransactions.forEach((entry: any) => {
+             // Access details from the 'details' field of passbook entry
+             // entry.details structure depends on what backend returns. 
+             // Based on passbook controller: details: e (where e is milk_entry)
+             const details = entry.details || {};
+             
+             // Construct unique ID for slip: date + shift + id
+             const slipId = `${entry.date}-${details.shift}-${details.id || Math.random().toString(36).substr(2, 5)}`;
+             
+             // Determine cattle type (Mock logic or if available in details)
+             // If fat > 5 usually Buffalo, else Cow.
+             const isCow = (details.fat || 0) < 5.0;
+             const cattleType = isCow ? 'Cow' : 'Buffalo';
+
+             SlipStorage.saveSlip({
+              id: slipId,
+              date: new Date(entry.date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+              memberCode: user?.amcu_customer_id || '246',
+              memberName: user?.name || 'MEMBER',
+              dairyName: '35 - RAMPUR A9929394623', 
+              cattleType: cattleType,
+              time: details.shift === 'M' ? '08:00' : '18:00', // Approx time
+              shift: details.shift === 'M' ? 'Subah' : 'Sham',
+              weight: `${(details.quantity_litre || 0).toFixed(1)} L`,
+              fat: `${(details.fat || 0).toFixed(1)} %`,
+              rate: `${(details.rate_per_litre || 0).toFixed(2)}`,
+              amount: `${(details.amount || 0).toFixed(2)}`,
+            });
+           });
+        }
 
         // Save to cache
         await cacheService.saveDashboard(summaryRes.data);
@@ -91,7 +132,6 @@ export default function DashboardScreen() {
 
   const formatCurrency = (val: number) => '₹' + (val || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchData();
@@ -137,12 +177,20 @@ export default function DashboardScreen() {
               </View>
               <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', marginTop: 2 }}>{user?.name || 'Customer'}</Text>
             </View>
-            <TouchableOpacity 
-              onPress={onRefresh}
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
-            >
-              <Ionicons name="refresh" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('SlipManager')}
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+              >
+                <Ionicons name="receipt-outline" size={20} color={colors.text} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={onRefresh}
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+              >
+                <Ionicons name="refresh" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -195,7 +243,12 @@ export default function DashboardScreen() {
         <View style={{ marginHorizontal: 20, marginTop: 16, backgroundColor: colors.card, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{t('today.collection')}</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{todayDate}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => navigation.navigate('SlipManager')}>
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '500' }}>View Slips</Text>
+              </TouchableOpacity>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{todayDate}</Text>
+            </View>
           </View>
           
           {/* Morning Row */}

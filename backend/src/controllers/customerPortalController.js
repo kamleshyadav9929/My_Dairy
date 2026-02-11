@@ -72,6 +72,9 @@ async function login(req, res) {
     }
 }
 
+const NodeCache = require('node-cache');
+const dashboardCache = new NodeCache({ stdTTL: 300 }); // 5 minutes cache
+
 /**
  * Get customer dashboard (monthly summary)
  */
@@ -86,13 +89,16 @@ async function getDashboard(req, res) {
         }
 
         const start = from || getFirstDayOfMonth();
-        // Force 'to' date to be inclusive by ensuring it's the end of the day or simply extending logic
-        // But for simply DATE comparisons in supabase:
-        // If we use .lte('date', '2025-12-28'), it matches entries with '2025-12-28'.
-        // However, if entries have time, we might need to be careful.
-        // Our 'date' column is type 'date', so '2025-12-28' should work fine.
-        // Just in case, let's use the provided 'to' or today.
         const end = to || getLocalDate();
+
+        // Cache Key
+        const cacheKey = `dashboard_stats_${customerId}_${start}_${end}`;
+        const cachedStats = dashboardCache.get(cacheKey);
+
+        if (cachedStats) {
+            console.log(`[Cache Hit] Serving dashboard for ${customerId}`);
+            return res.json(cachedStats);
+        }
 
         console.log(`Fetching dashboard for Customer: ${customerId}, Date Range: ${start} to ${end}`);
 
@@ -130,6 +136,9 @@ async function getDashboard(req, res) {
             avgFat: totalQty > 0 ? entries.reduce((sum, e) => sum + ((e.fat || 0) * (e.quantity_litre || 0)), 0) / totalQty : 0,
             avgSnf: totalQty > 0 ? entries.reduce((sum, e) => sum + ((e.snf || 0) * (e.quantity_litre || 0)), 0) / totalQty : 0
         };
+
+        // Save to cache
+        dashboardCache.set(cacheKey, stats);
 
         res.json(stats);
     } catch (error) {
@@ -355,11 +364,13 @@ async function getPassbook(req, res) {
 
         // Final balance should include advances deduction (same as admin panel)
         const totalMilkAmount = entries.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const totalMilkQty = entries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0);
         const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const finalBalance = totalMilkAmount - totalPayments - totalAdvances;
 
         const summary = {
             totalMilkAmount,
+            totalMilk: totalMilkQty, // Added for Passbook PDF
             totalPayments,
             totalAdvances,
             balance: finalBalance

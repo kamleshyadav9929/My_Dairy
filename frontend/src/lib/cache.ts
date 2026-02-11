@@ -80,4 +80,10 @@ export const CACHE_KEYS = {
   PASSBOOK_ENTRIES: 'passbook_entries',
   PROFILE: 'profile',
   NOTIFICATIONS: 'notifications',
+  // New dashboard keys (matching mobile cache structure)
+  DASHBOARD: 'customer_dashboard',
+  TODAY_COLLECTION: 'customer_today_collection',
+  TRENDS: 'customer_trends',
+  PASSBOOK_SUMMARY: 'customer_passbook_summary',
+  RECENT_PAYMENTS: 'customer_recent_payments',
 };

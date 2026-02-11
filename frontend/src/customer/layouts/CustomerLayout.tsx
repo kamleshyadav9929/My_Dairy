@@ -42,7 +42,7 @@ function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 safe-area-bottom">
-      <div className="flex items-center justify-around h-12 max-w-lg mx-auto">
+      <div className="flex items-center justify-around h-14 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path === '/customer/dashboard' && location.pathname === '/customer');
@@ -56,19 +56,17 @@ function BottomNav() {
                 isActive ? 'text-indigo-600' : 'text-slate-400'
               }`}
             >
-              <div className={`relative p-1 rounded-lg transition-all duration-200 ${
+              <div className={`relative p-1.5 rounded-lg transition-all duration-200 ${
                 isActive ? 'bg-indigo-50' : 'hover:bg-slate-50'
               }`}>
-                <Icon className={`w-4 h-4 transition-transform ${isActive ? 'stroke-[2.5]' : 'stroke-[1.5]'}`} />
+                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'stroke-[2.5]' : 'stroke-[1.5]'}`} />
                 {item.path === '/customer/notifications' && unreadCount > 0 && (
                   unreadCount > 9 
-                    ? <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] bg-red-500 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-white">9+</span>
-                    : unreadCount > 0
-                    ? <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
-                    : null
+                    ? <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] bg-red-500 rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-white">9+</span>
+                    : <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
                 )}
               </div>
-              <span className={`text-[9px] font-medium transition-all ${
+              <span className={`text-[10px] font-medium mt-0.5 transition-all ${
                 isActive ? 'text-indigo-600 font-semibold' : 'text-slate-400'
               }`}>
                 {item.label}
@@ -222,12 +220,12 @@ function CustomerLayoutContent() {
 
   return (
     <NotificationContext.Provider value={{ unreadCount, refreshCount: fetchUnreadCount }}>
-      <div className="min-h-screen bg-slate-50 flex flex-col safe-area-top">
+      <div className="h-screen bg-slate-50 flex flex-col overflow-hidden safe-area-top">
         {/* Offline Banner */}
         {isOffline && <OfflineBanner isOffline={isOffline} />}
         
         {/* Main Content */}
-        <main className="flex-1 pb-16 native-scroll overflow-y-auto">
+        <main className="flex-1 pb-20 native-scroll overflow-y-auto">
           <div className="max-w-lg mx-auto px-4 py-3">
             <Outlet />
           </div>

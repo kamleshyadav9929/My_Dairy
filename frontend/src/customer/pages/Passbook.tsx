@@ -11,9 +11,19 @@ import { Download, Loader2, Milk, IndianRupee, Share2, ChevronLeft, ChevronRight
 // Skeleton Components
 function SkeletonBalance() {
   return (
-    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5">
-      <div className="skeleton h-4 w-24 mb-2 opacity-20" />
-      <div className="skeleton h-10 w-36 opacity-20" />
+    <div className="bg-white rounded-2xl p-5 border border-slate-100">
+      <div className="skeleton h-4 w-24 mb-2" />
+      <div className="skeleton h-10 w-36 mb-4" />
+      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+        <div>
+          <div className="skeleton h-3 w-14 mb-2" />
+          <div className="skeleton h-5 w-20" />
+        </div>
+        <div>
+          <div className="skeleton h-3 w-14 mb-2" />
+          <div className="skeleton h-5 w-20" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -241,33 +251,50 @@ export default function Passbook() {
 
       {/* Balance Card */}
       {data && (
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-8 -mt-8" />
-          <div className="relative">
-            <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-1">
-              {t('closing.balance')}
-            </p>
-            <h3 className="text-3xl font-bold tracking-tight mb-3">
-              {formatCurrency(data?.summary?.balance || 0)}
-            </h3>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleShare}
-                disabled={!data?.transactions?.length}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                <Share2 className="w-4 h-4" />
-                Share
-              </button>
-              <button
-                onClick={handleDownloadPDF}
-                disabled={downloading || !data?.transactions?.length}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                PDF
-              </button>
+        <div className="bg-white rounded-2xl p-5 border border-slate-100">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+              {t('current.balance')}
+            </span>
+          </div>
+          <h3 className="text-3xl font-bold text-slate-800 tracking-tight mb-3">
+            {formatCurrency(data?.summary?.balance || 0)}
+          </h3>
+
+          {/* Earned / Received */}
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100 mb-4">
+            <div>
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{t('earned')}</p>
+              <p className="text-base font-semibold text-slate-800 mt-1">
+                {formatCurrency(data?.summary?.totalMilkAmount || 0)}
+              </p>
             </div>
+            <div>
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{t('received')}</p>
+              <p className="text-base font-semibold text-emerald-600 mt-1">
+                {formatCurrency(data?.summary?.totalPayments || 0)}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleShare}
+              disabled={!data?.transactions?.length}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors disabled:opacity-50 tap-scale"
+            >
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloading || !data?.transactions?.length}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors disabled:opacity-50 tap-scale"
+            >
+              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              PDF
+            </button>
           </div>
         </div>
       )}
