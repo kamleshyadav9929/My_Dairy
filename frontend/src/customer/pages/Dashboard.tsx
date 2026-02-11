@@ -11,11 +11,11 @@ import {
 } from 'lucide-react';
 
 // ─── Skeletons ───────────────────────────────────────────
-function SkeletonPulse({ className = '', delay = 0 }: { className?: string; delay?: number }) {
+function SkeletonPulse({ className = '', delay = 0, style }: { className?: string; delay?: number; style?: React.CSSProperties }) {
   return (
     <div
       className={`rounded-lg bg-slate-100 animate-pulse ${className}`}
-      style={{ animationDelay: `${delay}ms` }}
+      style={{ ...style, animationDelay: `${delay}ms` }}
     />
   );
 }
@@ -441,7 +441,7 @@ function StatItem({ icon: Icon, gradient, label, value, unit, isGreen, border }:
 // ─── Collection Row Component ────────────────────────────
 function CollectionRow({ icon: Icon, gradient, shadowColor, label, fat, snf, qty, amount, t }: {
   icon: any; gradient: string; shadowColor: string; label: string;
-  fat: any; snf: any; qty: number; amount: string; t: (key: string) => string;
+  fat: any; snf: any; qty: number; amount: string; t: any;
 }) {
   return (
     <div className="flex items-center gap-3 group">

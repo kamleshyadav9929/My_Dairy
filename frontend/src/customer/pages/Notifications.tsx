@@ -3,8 +3,8 @@ import { customerPortalApi } from '../../lib/api';
 import { useI18n } from '../context/I18nContext';
 import { useNotifications } from '../layouts/CustomerLayout';
 import { 
-  Bell, CreditCard, CheckCheck, Sunrise, Moon, 
-  Loader2, Sparkles, BellOff 
+  CreditCard, CheckCheck, Sunrise, Moon, 
+  Sparkles, BellOff 
 } from 'lucide-react';
 
 interface Notification {

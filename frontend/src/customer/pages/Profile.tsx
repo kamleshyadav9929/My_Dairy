@@ -28,7 +28,7 @@ const SETTING_ICONS: Record<string, { gradient: string }> = {
 
 export default function Profile() {
   const { t, language, changeLanguage } = useI18n();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(() => getCacheIgnoreExpiry(CACHE_KEYS.PROFILE));
   const [showLanguage, setShowLanguage] = useState(false);
