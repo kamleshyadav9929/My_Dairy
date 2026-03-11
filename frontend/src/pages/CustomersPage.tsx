@@ -145,8 +145,8 @@ export default function CustomersPage() {
   const loadCustomers = async () => {
     try {
       setIsLoading(true);
-      const res = await customerApi.getAll({ search, limit: 100 });
-      setCustomers(res.data.customers || []);
+      const customersResponse = await customerApi.getAll({ search, limit: 100 });
+      setCustomers(customersResponse.data.customers || []);
     } catch (error) {
       console.error('Failed to load customers:', error);
     } finally {

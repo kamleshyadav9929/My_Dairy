@@ -173,9 +173,9 @@ function CustomerLayoutContent() {
   // Fetch unread notification count
   const fetchUnreadCount = async () => {
     try {
-      const res = await customerPortalApi.getNotifications();
-      const notifications = res.data.notifications || [];
-      const unread = notifications.filter((n: any) => !n.is_read).length;
+      const notificationsResponse = await customerPortalApi.getNotifications();
+      const notificationsList = notificationsResponse.data.notifications || [];
+      const unread = notificationsList.filter((n: any) => !n.is_read).length;
       setUnreadCount(unread);
     } catch (error) {
       console.error('Failed to fetch notification count:', error);

@@ -18,9 +18,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 // Helper to get local date as YYYY-MM-DD
 const getLocalDate = (date = new Date()) => {
-    const d = new Date(date);
-    const offset = d.getTimezoneOffset();
-    const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+    const dateObject = new Date(date);
+    const offset = dateObject.getTimezoneOffset();
+    const localDate = new Date(dateObject.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().split('T')[0];
 };
 

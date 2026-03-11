@@ -121,9 +121,9 @@ export default function DashboardPage() {
   }, []);
 
   const getLocalDate = () => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().split('T')[0];
+    const currentDate = new Date();
+    currentDate.setMinutes(currentDate.getMinutes() - currentDate.getTimezoneOffset());
+    return currentDate.toISOString().split('T')[0];
   };
 
   const loadDashboardData = async () => {
@@ -131,17 +131,17 @@ export default function DashboardPage() {
       if (!isLoading) setIsRefreshing(true);
       
       const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().split('T')[0];
+        const dateObj = new Date();
+        dateObj.setDate(dateObj.getDate() - (6 - i));
+        dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+        return dateObj.toISOString().split('T')[0];
       });
 
       const last30Days = Array.from({ length: 30 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (29 - i));
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().split('T')[0];
+        const dateObj = new Date();
+        dateObj.setDate(dateObj.getDate() - (29 - i));
+        dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+        return dateObj.toISOString().split('T')[0];
       });
 
       const [todayRes, customersRes, paymentsRes, allCustomersRes, weeklyRes, monthlyRes] = await Promise.all([

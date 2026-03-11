@@ -271,8 +271,8 @@ export default function ReportsPage() {
 
   const loadCustomers = async () => {
     try {
-      const res = await customerApi.getAll({ limit: 1000 });
-      setCustomers(res.data.customers.map((c: any) => ({
+      const customersResponse = await customerApi.getAll({ limit: 1000 });
+      setCustomers(customersResponse.data.customers.map((c: any) => ({
         value: c.id.toString(),
         label: c.name,
         subLabel: `#${c.amcu_customer_id}`
@@ -286,11 +286,11 @@ export default function ReportsPage() {
     if (!passbookCustomerId) return;
     setIsLoadingPassbook(true);
     try {
-      const res = await customerApi.getPassbook(parseInt(passbookCustomerId), { 
+      const passbookResponse = await customerApi.getPassbook(parseInt(passbookCustomerId), { 
         from: passbookFrom, 
         to: passbookTo 
       });
-      setPassbookData(res.data);
+      setPassbookData(passbookResponse.data);
       setShowPassbookModal(true);
     } catch (error) {
       console.error('Failed to generate passbook:', error);
@@ -303,8 +303,8 @@ export default function ReportsPage() {
   const handleExportCsv = async () => {
     setIsExportingCsv(true);
     try {
-      const res = await entryApi.exportCsv({ from: dateFrom, to: dateTo });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const csvResponse = await entryApi.exportCsv({ from: dateFrom, to: dateTo });
+      const url = window.URL.createObjectURL(new Blob([csvResponse.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `milk_entries_${dateFrom}_${dateTo}.csv`);
@@ -322,8 +322,8 @@ export default function ReportsPage() {
   const handleExportPdf = async () => {
     setIsExportingPdf(true);
     try {
-      const res = await entryApi.exportPdf({ date: pdfDate });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const pdfResponse = await entryApi.exportPdf({ date: pdfDate });
+      const url = window.URL.createObjectURL(new Blob([pdfResponse.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `daily_report_${pdfDate}.pdf`);

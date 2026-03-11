@@ -31,10 +31,10 @@ async function getAllPayments(req, res) {
 
         if (error) throw error;
 
-        const transformedPayments = payments.map(p => ({
-            ...p,
-            customer_name: p.customers?.name,
-            amcu_customer_id: p.customers?.amcu_customer_id
+        const transformedPayments = payments.map(payment => ({
+            ...payment,
+            customer_name: payment.customers?.name,
+            amcu_customer_id: payment.customers?.amcu_customer_id
         }));
 
         res.json({
@@ -198,7 +198,7 @@ async function createPayment(req, res) {
                 .gte('date', startDate)
                 .lte('date', endDate);
             
-            const totalMilkAmount = (entriesData || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+            const totalMilkAmount = (entriesData || []).reduce((sum, entry) => sum + (entry.amount || 0), 0);
             
             // Get total payments for this month
             const { data: paymentsData } = await supabase
@@ -208,7 +208,7 @@ async function createPayment(req, res) {
                 .gte('date', startDate)
                 .lte('date', endDate);
             
-            const totalPayments = (paymentsData || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPayments = (paymentsData || []).reduce((sum, payment) => sum + (payment.amount || 0), 0);
             
             // Get total advances utilized
             const { data: advancesData } = await supabase
@@ -216,7 +216,7 @@ async function createPayment(req, res) {
                 .select('utilized_amount')
                 .eq('customer_id', customerId);
             
-            const totalAdvancesUsed = (advancesData || []).reduce((sum, a) => sum + (a.utilized_amount || 0), 0);
+            const totalAdvancesUsed = (advancesData || []).reduce((sum, advance) => sum + (advance.utilized_amount || 0), 0);
             
             const remainingBalance = totalMilkAmount - totalPayments - totalAdvancesUsed;
 

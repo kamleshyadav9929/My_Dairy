@@ -89,10 +89,10 @@ export default function Passbook() {
     
     setLoading(true);
     try {
-      const res = await customerPortalApi.getPassbook({ from: fromDate, to: toDate });
-      setData(res.data);
+      const passbookResponse = await customerPortalApi.getPassbook({ from: fromDate, to: toDate });
+      setData(passbookResponse.data);
       // Cache for 30 minutes
-      setCache(CACHE_KEYS.PASSBOOK_ENTRIES, res.data, 30 * 60 * 1000);
+      setCache(CACHE_KEYS.PASSBOOK_ENTRIES, passbookResponse.data, 30 * 60 * 1000);
     } catch (error) {
       console.error(error);
     } finally {

@@ -12,8 +12,8 @@ async function getAllSettings(req, res) {
         if (error) throw error;
 
         const settingsMap = {};
-        settings.forEach(s => {
-            settingsMap[s.key] = s.value;
+        settings.forEach(setting => {
+            settingsMap[setting.key] = setting.value;
         });
 
         res.json({ settings: settingsMap });
@@ -50,8 +50,8 @@ async function updateSettings(req, res) {
         if (error) throw error;
 
         const settingsMap = {};
-        settings.forEach(s => {
-            settingsMap[s.key] = s.value;
+        settings.forEach(setting => {
+            settingsMap[setting.key] = setting.value;
         });
 
         res.json({ settings: settingsMap });

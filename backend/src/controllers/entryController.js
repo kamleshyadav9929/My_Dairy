@@ -39,18 +39,18 @@ async function getAllEntries(req, res) {
         if (error) throw error;
 
         // Transform to match expected format
-        const transformedEntries = entries.map(e => {
-            let displayTime = e.time;
-            if (!displayTime && e.created_at) {
+        const transformedEntries = entries.map(entry => {
+            let displayTime = entry.time;
+            if (!displayTime && entry.created_at) {
                 // Extract HH:MM:SS from ISO timestamp
-                const date = new Date(e.created_at);
+                const date = new Date(entry.created_at);
                 displayTime = date.toLocaleTimeString('en-GB', { hour12: true, hour: '2-digit', minute: '2-digit' });
             }
             return {
-                ...e,
+                ...entry,
                 time: displayTime,
-                customer_name: e.customers?.name,
-                amcu_customer_id: e.customers?.amcu_customer_id
+                customer_name: entry.customers?.name,
+                amcu_customer_id: entry.customers?.amcu_customer_id
             };
         });
 
@@ -133,17 +133,17 @@ async function getTodayStats(req, res) {
 
         const stats = {
             entryCount: allEntries.length,
-            totalLitres: allEntries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0),
-            totalAmount: allEntries.reduce((sum, e) => sum + (e.amount || 0), 0),
-            morningLitres: allEntries.filter(e => e.shift === 'M').reduce((sum, e) => sum + (e.quantity_litre || 0), 0),
-            eveningLitres: allEntries.filter(e => e.shift === 'E').reduce((sum, e) => sum + (e.quantity_litre || 0), 0)
+            totalLitres: allEntries.reduce((sum, entry) => sum + (entry.quantity_litre || 0), 0),
+            totalAmount: allEntries.reduce((sum, entry) => sum + (entry.amount || 0), 0),
+            morningLitres: allEntries.filter(entry => entry.shift === 'M').reduce((sum, entry) => sum + (entry.quantity_litre || 0), 0),
+            eveningLitres: allEntries.filter(entry => entry.shift === 'E').reduce((sum, entry) => sum + (entry.quantity_litre || 0), 0)
         };
 
         // Transform entries
-        const transformedEntries = entries.map(e => ({
-            ...e,
-            customer_name: e.customers?.name,
-            amcu_customer_id: e.customers?.amcu_customer_id
+        const transformedEntries = entries.map(entry => ({
+            ...entry,
+            customer_name: entry.customers?.name,
+            amcu_customer_id: entry.customers?.amcu_customer_id
         }));
 
         // Get top customers
@@ -161,19 +161,19 @@ async function getTodayStats(req, res) {
 
         // Aggregate top customers
         const customerMap = {};
-        topCustomersRaw.forEach(e => {
-            const id = e.customer_id;
+        topCustomersRaw.forEach(customerEntry => {
+            const id = customerEntry.customer_id;
             if (!customerMap[id]) {
                 customerMap[id] = {
                     id,
-                    name: e.customers?.name,
-                    amcu_customer_id: e.customers?.amcu_customer_id,
+                    name: customerEntry.customers?.name,
+                    amcu_customer_id: customerEntry.customers?.amcu_customer_id,
                     total_litres: 0,
                     total_amount: 0
                 };
             }
-            customerMap[id].total_litres += e.quantity_litre || 0;
-            customerMap[id].total_amount += e.amount || 0;
+            customerMap[id].total_litres += customerEntry.quantity_litre || 0;
+            customerMap[id].total_amount += customerEntry.amount || 0;
         });
 
         const topCustomers = Object.values(customerMap)
@@ -425,10 +425,10 @@ async function exportCSV(req, res) {
 
         // Generate CSV
         const headers = ['Date', 'Time', 'Customer', 'AMCU ID', 'Shift', 'Type', 'Qty(L)', 'Fat', 'SNF', 'CLR', 'Rate', 'Amount', 'Source'];
-        const rows = entries.map(e => [
-            e.date, e.time || '', e.customers?.name, e.customers?.amcu_customer_id,
-            e.shift, e.milk_type, e.quantity_litre, e.fat || '', e.snf || '', e.clr || '',
-            e.rate_per_litre, e.amount, e.source
+        const rows = entries.map(entry => [
+            entry.date, entry.time || '', entry.customers?.name, entry.customers?.amcu_customer_id,
+            entry.shift, entry.milk_type, entry.quantity_litre, entry.fat || '', entry.snf || '', entry.clr || '',
+            entry.rate_per_litre, entry.amount, entry.source
         ]);
 
         const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -461,15 +461,15 @@ async function exportDailyPDF(req, res) {
 
         if (entriesError) throw entriesError;
 
-        const transformedEntries = entries.map(e => ({
-            ...e,
-            customer_name: e.customers?.name
+        const transformedEntries = entries.map(entry => ({
+            ...entry,
+            customer_name: entry.customers?.name
         }));
 
         const totals = {
             count: entries.length,
-            litres: entries.reduce((sum, e) => sum + (e.quantity_litre || 0), 0),
-            amount: entries.reduce((sum, e) => sum + (e.amount || 0), 0)
+            litres: entries.reduce((sum, entry) => sum + (entry.quantity_litre || 0), 0),
+            amount: entries.reduce((sum, entry) => sum + (entry.amount || 0), 0)
         };
 
         const { data: settings } = await supabase
