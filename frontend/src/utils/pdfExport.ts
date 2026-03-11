@@ -35,8 +35,8 @@ interface PassbookData {
 // Helper to format currency without special symbols (for PDF compatibility)
 const formatAmount = (amount: number | undefined | null): string => {
   if (amount === undefined || amount === null || isNaN(amount)) return '-';
-  const val = Math.abs(amount);
-  return `Rs. ${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const absoluteAmount = Math.abs(amount);
+  return `Rs. ${absoluteAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const formatDate = (dateStr: string): string => {

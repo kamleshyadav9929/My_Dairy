@@ -183,9 +183,9 @@ export default function Notifications() {
 
   const loadNotifications = useCallback(async () => {
     try {
-      const res = await customerPortalApi.getNotifications();
-      const data = res.data?.notifications || res.data || [];
-      setNotifications(Array.isArray(data) ? data : []);
+      const notificationsResponse = await customerPortalApi.getNotifications();
+      const notificationsData = notificationsResponse.data?.notifications || notificationsResponse.data || [];
+      setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
       setError('');
     } catch (err) {
       console.error('Failed to load notifications:', err);

@@ -110,8 +110,8 @@ export default function PaymentsPage() {
 
   const loadCustomers = async () => {
     try {
-      const res = await customerApi.getAll({ limit: 500 });
-      setCustomers(res.data.customers || []);
+      const customersResponse = await customerApi.getAll({ limit: 500 });
+      setCustomers(customersResponse.data.customers || []);
     } catch (error) {
       console.error('Failed to load customers:', error);
     }
@@ -120,13 +120,13 @@ export default function PaymentsPage() {
   const loadPayments = async () => {
     try {
       setIsLoading(true);
-      const res = await paymentApi.getAll({
+      const paymentsResponse = await paymentApi.getAll({
         from: dateFrom,
         to: dateTo,
         customerId: selectedCustomer ? parseInt(selectedCustomer) : undefined,
         limit: 200
       });
-      setPayments(res.data.payments || []);
+      setPayments(paymentsResponse.data.payments || []);
     } catch (error) {
       console.error('Failed to load payments:', error);
     } finally {
@@ -137,11 +137,11 @@ export default function PaymentsPage() {
   const loadAdvances = async () => {
     try {
       setIsLoadingAdvances(true);
-      const res = await advanceApi.getAll({
+      const advancesResponse = await advanceApi.getAll({
         customerId: selectedCustomer ? parseInt(selectedCustomer) : undefined,
         limit: 200
       });
-      setAdvances(res.data.advances || []);
+      setAdvances(advancesResponse.data.advances || []);
     } catch (error) {
       console.error('Failed to load advances:', error);
     } finally {
@@ -157,8 +157,8 @@ export default function PaymentsPage() {
     }
     setLoadingAdvanceBalance(true);
     try {
-      const res = await advanceApi.getBalance(parseInt(customerId));
-      setCustomerAdvanceBalance(res.data.balance || 0);
+      const advanceBalanceResponse = await advanceApi.getBalance(parseInt(customerId));
+      setCustomerAdvanceBalance(advanceBalanceResponse.data.balance || 0);
     } catch (error) {
       console.error('Failed to fetch advance balance:', error);
       setCustomerAdvanceBalance(0);
@@ -173,7 +173,7 @@ export default function PaymentsPage() {
     setIsSaving(true);
 
     try {
-      const data = {
+      const paymentData = {
         customerId: parseInt(formData.customerId),
         date: formData.date,
         amount: parseFloat(formData.amount),
@@ -183,9 +183,9 @@ export default function PaymentsPage() {
       };
 
       if (editingPayment) {
-        await paymentApi.update(editingPayment.id, data);
+        await paymentApi.update(editingPayment.id, paymentData);
       } else {
-        await paymentApi.create({ ...data, useAdvance });
+        await paymentApi.create({ ...paymentData, useAdvance });
       }
       setShowModal(false);
       resetForm();
@@ -250,7 +250,7 @@ export default function PaymentsPage() {
     setIsSavingAdvance(true);
 
     try {
-      const data = {
+      const advanceData = {
         customerId: parseInt(advanceFormData.customerId),
         date: advanceFormData.date,
         amount: parseFloat(advanceFormData.amount),
@@ -258,9 +258,9 @@ export default function PaymentsPage() {
       };
 
       if (editingAdvance) {
-        await advanceApi.update(editingAdvance.id, data);
+        await advanceApi.update(editingAdvance.id, advanceData);
       } else {
-        await advanceApi.create(data);
+        await advanceApi.create(advanceData);
       }
       setShowAdvanceModal(false);
       resetAdvanceForm();

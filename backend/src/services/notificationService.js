@@ -45,7 +45,7 @@ const getCustomerTokens = async (customerId) => {
             .eq('is_active', true);
 
         if (error) throw error;
-        return data.map(t => t.token);
+        return data.map(tokenRecord => tokenRecord.token);
     } catch (error) {
         console.error('Error getting customer tokens:', error);
         return [];
@@ -149,10 +149,10 @@ const sendBroadcast = async (title, body, data = {}) => {
         if (error) throw error;
 
         const messages = [];
-        for (const t of allTokens) {
-            if (Expo.isExpoPushToken(t.token)) {
+        for (const tokenRecord of allTokens) {
+            if (Expo.isExpoPushToken(tokenRecord.token)) {
                 messages.push({
-                    to: t.token,
+                    to: tokenRecord.token,
                     sound: 'default',
                     title: title,
                     body: body,

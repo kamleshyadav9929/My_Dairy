@@ -47,9 +47,9 @@ interface Customer {
 }
 
 const getLocalDate = () => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().split('T')[0];
+  const currentDate = new Date();
+  currentDate.setMinutes(currentDate.getMinutes() - currentDate.getTimezoneOffset());
+  return currentDate.toISOString().split('T')[0];
 };
 
 interface RateCard {
@@ -233,13 +233,13 @@ export default function EntriesPage() {
   const loadEntries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await entryApi.getAll({
+      const entriesResponse = await entryApi.getAll({
         from: dateFrom,
         to: dateTo,
         customerId: selectedCustomer ? parseInt(selectedCustomer) : undefined,
         limit: 200
       });
-      setEntries(res.data.entries || []);
+      setEntries(entriesResponse.data.entries || []);
     } catch (error) {
       console.error('Failed to load entries:', error);
     } finally {
@@ -253,8 +253,8 @@ export default function EntriesPage() {
 
   const loadCustomers = async () => {
     try {
-      const res = await customerApi.getAll({ limit: 500 });
-      setCustomers(res.data.customers || []);
+      const customersResponse = await customerApi.getAll({ limit: 500 });
+      setCustomers(customersResponse.data.customers || []);
     } catch (error) {
       console.error('Failed to load customers:', error);
     }
@@ -265,7 +265,7 @@ export default function EntriesPage() {
     setIsSaving(true);
 
     try {
-      const data = {
+      const entryData = {
         customerId: parseInt(formData.customerId),
         date: formData.date,
         shift: formData.shift,
@@ -276,9 +276,9 @@ export default function EntriesPage() {
       };
 
       if (editingEntry) {
-        await entryApi.update(editingEntry.id, data);
+        await entryApi.update(editingEntry.id, entryData);
       } else {
-        await entryApi.create(data);
+        await entryApi.create(entryData);
       }
       setShowModal(false);
       resetForm();
@@ -382,7 +382,7 @@ export default function EntriesPage() {
     setRapidSaving(true);
 
     try {
-      const data = {
+      const rapidEntryData = {
         customerId: parseInt(rapidFormData.customerId),
         date: getLocalDate(),
         shift: new Date().getHours() < 12 ? 'M' : 'E',
@@ -392,7 +392,7 @@ export default function EntriesPage() {
         snf: rapidFormData.snf ? parseFloat(rapidFormData.snf) : undefined
       };
 
-      const response = await entryApi.create(data);
+      const response = await entryApi.create(rapidEntryData);
       const newEntry = response.data.entry;
       
       // Prepend new entry to local state (no full reload)

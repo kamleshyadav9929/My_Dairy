@@ -49,8 +49,8 @@ async function loadSettings() {
     }
 
     settingsCache = {};
-    (data || []).forEach(s => {
-        settingsCache[s.key] = s.value;
+    (data || []).forEach(setting => {
+        settingsCache[setting.key] = setting.value;
     });
     cacheExpiry = Date.now() + CACHE_TTL;
     return settingsCache;
