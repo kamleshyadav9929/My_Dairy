@@ -7,7 +7,6 @@ import { Milk, Eye, EyeOff, Loader2, UserCircle, KeyRound, ArrowLeft, CheckCircl
 export default function LoginPage() {
   const { user, login, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  // Hidden admin access: tap logo 3 times to reveal admin toggle
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showAdminToggle, setShowAdminToggle] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -18,8 +17,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  
-  // Forgot password state
+  const [showLoginForm, setShowLoginForm] = useState(false);
+
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotId, setForgotId] = useState('');
   const [forgotPhone, setForgotPhone] = useState('');
@@ -27,7 +26,6 @@ export default function LoginPage() {
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [forgotError, setForgotError] = useState('');
 
-  // Handle keyboard visibility on mobile
   useEffect(() => {
     const handleResize = () => {
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
@@ -90,18 +88,15 @@ export default function LoginPage() {
     }
   };
 
-  // ─── Accent colors based on role ──────────────
   const accent = isAdmin
     ? { gradient: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/25', ring: 'ring-blue-500/30', border: 'border-blue-500', bg: 'bg-blue-600 hover:bg-blue-700', text: 'text-blue-600', light: 'bg-blue-50 border-blue-100 text-blue-700' }
     : { gradient: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/25', ring: 'ring-emerald-500/30', border: 'border-emerald-500', bg: 'bg-emerald-600 hover:bg-emerald-700', text: 'text-emerald-600', light: 'bg-emerald-50 border-emerald-100 text-emerald-700' };
 
-  // ─── Forgot Password View ─────────────────────
   if (showForgotPassword) {
     return (
       <div className="min-h-screen min-h-[100dvh] flex items-start sm:items-center justify-center px-4 py-8 sm:py-4 bg-slate-50 overflow-auto">
         <div className="w-full max-w-sm"
           style={{ animation: 'fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both' }}>
-          {/* Card */}
           <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100/80 p-6">
             <button
               onClick={() => { setShowForgotPassword(false); setForgotSuccess(false); setForgotError(''); }}
@@ -184,168 +179,220 @@ export default function LoginPage() {
     );
   }
 
-  // ─── Main Login View ──────────────────────────
   return (
-    <div className={`min-h-screen min-h-[100dvh] flex items-start sm:items-center justify-center px-4 bg-slate-50 overflow-auto ${keyboardVisible ? 'pt-4 pb-8' : 'py-8 sm:py-4'}`}>
-      <div className="w-full max-w-sm">
-        {/* Logo Section */}
-        <div className={`text-center mb-6 transition-all duration-200 ${keyboardVisible ? 'hidden sm:block' : ''}`}
-          style={{ animation: 'fadeSlideUp 0.4s cubic-bezier(0.16,1,0.3,1) both' }}>
-          <div 
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-500 mx-auto mb-3 shadow-lg shadow-indigo-500/25 cursor-pointer select-none hover:scale-105 active:scale-95 transition-transform"
-            onClick={() => {
-              if (showAdminToggle) return;
-              const newCount = logoClickCount + 1;
-              setLogoClickCount(newCount);
-              if (newCount >= 3) {
-                setShowAdminToggle(true);
-              }
-              setTimeout(() => setLogoClickCount(0), 2000);
-            }}
-          >
-            <Milk className="w-8 h-8 text-white" />
+    <div className="min-h-screen min-h-[100dvh] bg-[#f8fbff] overflow-hidden">
+      <div className="relative mx-auto flex min-h-screen min-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl shadow-slate-300/30 sm:my-6 sm:h-[calc(100dvh-3rem)] sm:min-h-[680px] sm:max-h-[920px] sm:rounded-[2rem]">
+        <img src="/Login_backround.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/92 via-white/64 via-45% to-black/54" />
+        <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_18%_0%,rgba(124,92,255,0.22),transparent_55%),radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.95),transparent_48%)]" />
+
+        <main className={`relative z-10 flex min-h-screen min-h-[100dvh] flex-col px-7 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(28px,env(safe-area-inset-top))] sm:min-h-0 sm:flex-1 ${keyboardVisible ? 'justify-start overflow-y-auto' : ''}`}>
+          <section className={`text-center transition-all duration-300 ${keyboardVisible && showLoginForm ? 'hidden' : ''}`}
+            style={{ animation: 'fadeSlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both' }}>
+            <button
+              type="button"
+              aria-label="MyDairy"
+              className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-white/80 shadow-xl shadow-indigo-200/40 ring-1 ring-white/80 backdrop-blur transition-transform hover:scale-105 active:scale-95"
+              onClick={() => {
+                if (showAdminToggle) return;
+                const newCount = logoClickCount + 1;
+                setLogoClickCount(newCount);
+                if (newCount >= 3) {
+                  setShowAdminToggle(true);
+                  setShowLoginForm(true);
+                }
+                setTimeout(() => setLogoClickCount(0), 2000);
+              }}
+            >
+              <img src="/logo.png" alt="" className="h-16 w-16 rounded-full object-contain" />
+            </button>
+            <h1 className="font-heading text-[clamp(2.45rem,12vw,3.55rem)] font-extrabold leading-none tracking-normal text-[#07164a]">
+              My<span className="bg-gradient-to-r from-[#8752ff] to-[#5a39e6] bg-clip-text text-transparent">Dairy</span>
+            </h1>
+            <p className="mt-3 text-[16px] font-semibold text-slate-500">Smart Dairy. Better Tomorrow.</p>
+          </section>
+
+          <section className={`relative z-10 mt-7 text-center transition-all duration-300 ${keyboardVisible && showLoginForm ? 'hidden' : ''}`}
+            style={{ animation: 'fadeSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '80ms' }}>
+            <p className="font-heading text-[clamp(2rem,8vw,2.55rem)] font-bold leading-tight tracking-normal text-[#07164a]">Welcome to</p>
+            <h2 className="font-heading text-[clamp(2.85rem,14vw,4.25rem)] font-extrabold leading-none tracking-normal text-[#07164a]">
+              My<span className="bg-gradient-to-r from-[#8752ff] to-[#5a39e6] bg-clip-text text-transparent">Dairy</span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-[18rem] text-[clamp(1.1rem,4.7vw,1.32rem)] font-medium leading-relaxed text-slate-500">
+              Track your milk collection, earnings and payments all in one place.
+            </p>
+          </section>
+
+          <div className={`pointer-events-none relative z-0 mt-auto min-h-[255px] overflow-hidden transition-all duration-300 sm:min-h-[220px] ${showLoginForm ? 'opacity-55' : 'opacity-100'} ${keyboardVisible ? 'hidden' : ''}`}>
+            <img src="/Login_frontend.png" alt="" className="absolute bottom-[-205px] left-1/2 w-[122%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl sm:bottom-[-245px]" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Dairy</h1>
-          <p className="text-slate-400 mt-1 text-[13px] font-medium">Smart Milk Collection System</p>
-        </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100/80 p-6"
-          style={{ animation: 'fadeSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '80ms' }}>
-          
-          {/* Role Selector - Stays visible once activated */}
-          {showAdminToggle ? (
-            <div className="flex gap-1.5 p-1 bg-slate-100/80 rounded-xl mb-5"
-              style={{ animation: 'fadeSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both' }}>
+          {!showLoginForm && (
+            <section className="relative z-20 space-y-5 pb-1"
+              style={{ animation: 'fadeSlideUp 0.55s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '130ms' }}>
               <button
                 type="button"
-                onClick={() => { setIsAdmin(true); setError(''); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-[13px] font-semibold transition-all ${
-                  isAdmin
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
+                onClick={() => setShowLoginForm(true)}
+                className="flex h-16 w-full items-center justify-center rounded-[1.65rem] bg-gradient-to-r from-[#8b4dff] to-[#6337f6] text-[1.45rem] font-extrabold text-white shadow-xl shadow-violet-900/30 transition active:scale-[0.98]"
               >
-                <ShieldCheck className="w-4 h-4" />
-                Admin
+                Get Started
               </button>
               <button
                 type="button"
-                onClick={() => { setIsAdmin(false); setError(''); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-[13px] font-semibold transition-all ${
-                  !isAdmin
-                    ? 'bg-white text-emerald-600 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
+                onClick={() => setShowLoginForm(true)}
+                className="mx-auto flex items-center justify-center gap-3 text-[1.28rem] font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition active:scale-95"
               >
-                <UserCircle className="w-4 h-4" />
-                Customer
+                Login to Account
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
+                  <ArrowRight className="h-5 w-5" />
+                </span>
               </button>
-            </div>
-          ) : (
-            <div className={`flex items-center justify-center gap-2 mb-5 py-2.5 px-4 rounded-xl border ${accent.light}`}>
-              <UserCircle className="w-4 h-4" />
-              <span className="text-[13px] font-bold">Farmer Login</span>
-            </div>
+            </section>
           )}
 
-          {error && (
-            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium flex items-center gap-2"
-              style={{ animation: 'shake 0.4s ease both' }}>
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                {isAdmin ? 'Username' : 'Customer ID'}
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className={`w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-[14px] placeholder-slate-300 focus:outline-none focus:ring-2 transition-all focus:${accent.ring} focus:${accent.border}`}
-                placeholder={isAdmin ? 'Enter admin username' : 'Enter your AMCU ID'}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-[14px] placeholder-slate-300 focus:outline-none focus:ring-2 transition-all pr-11 focus:${accent.ring} focus:${accent.border}`}
-                  placeholder="Enter your password"
-                  required
-                />
+          <section className={`relative z-30 ${showLoginForm ? 'block' : 'hidden'} ${keyboardVisible ? 'mt-4' : 'mt-auto'}`}>
+            <div className="rounded-[1.6rem] border border-white/70 bg-white/92 p-5 shadow-2xl shadow-slate-950/20 backdrop-blur-xl"
+              style={{ animation: 'slideUpSoft 0.35s cubic-bezier(0.16,1,0.3,1) both' }}>
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-violet-500">MyDairy</p>
+                  <h2 className="mt-1 font-heading text-2xl font-extrabold tracking-normal text-[#07164a]">Login to Account</h2>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors p-1 active:scale-90"
+                  onClick={() => setShowLoginForm(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 active:scale-95"
+                  aria-label="Back"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  <ArrowLeft className="h-5 w-5" />
                 </button>
               </div>
-            </div>
 
-            {/* Remember Me */}
-            <label className="flex items-center gap-2.5 cursor-pointer group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className={`w-4 h-4 rounded border-slate-300 transition-colors ${
-                    isAdmin ? 'text-blue-600 focus:ring-blue-500' : 'text-emerald-600 focus:ring-emerald-500'
-                  }`}
-                />
-              </div>
-              <span className="text-[13px] text-slate-400 font-medium group-hover:text-slate-500 transition-colors">Remember me for 30 days</span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] text-white bg-gradient-to-r ${accent.gradient} ${accent.shadow} hover:shadow-lg`}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="text-[14px]">Signing in...</span>
-                </>
+              {showAdminToggle ? (
+                <div className="flex gap-1.5 p-1 bg-slate-100/80 rounded-xl mb-5"
+                  style={{ animation: 'fadeSlideUp 0.3s cubic-bezier(0.16,1,0.3,1) both' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setIsAdmin(true); setError(''); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-[13px] font-semibold transition-all ${
+                      isAdmin
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsAdmin(false); setError(''); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-[13px] font-semibold transition-all ${
+                      !isAdmin
+                        ? 'bg-white text-emerald-600 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <UserCircle className="w-4 h-4" />
+                    Customer
+                  </button>
+                </div>
               ) : (
-                <>
-                  <span className="text-[14px]">Sign In</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
+                <div className={`flex items-center justify-center gap-2 mb-5 py-2.5 px-4 rounded-xl border ${accent.light}`}>
+                  <UserCircle className="w-4 h-4" />
+                  <span className="text-[13px] font-bold">Farmer Login</span>
+                </div>
               )}
-            </button>
-          </form>
 
-          {!isAdmin && (
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setShowForgotPassword(true)}
-                className={`text-[13px] ${accent.text} font-semibold transition-all hover:opacity-80 active:scale-95`}
-              >
-                Forgot Password?
-              </button>
+              {error && (
+                <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[13px] font-medium flex items-center gap-2"
+                  style={{ animation: 'shake 0.4s ease both' }}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                    {isAdmin ? 'Username' : 'Customer ID'}
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className={`w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-[14px] placeholder-slate-300 focus:outline-none focus:ring-2 transition-all focus:${accent.ring} focus:${accent.border}`}
+                    placeholder={isAdmin ? 'Enter admin username' : 'Enter your AMCU ID'}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={`w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-[14px] placeholder-slate-300 focus:outline-none focus:ring-2 transition-all pr-11 focus:${accent.ring} focus:${accent.border}`}
+                      placeholder="Enter your password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors p-1 active:scale-90"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className={`w-4 h-4 rounded border-slate-300 transition-colors ${
+                      isAdmin ? 'text-blue-600 focus:ring-blue-500' : 'text-emerald-600 focus:ring-emerald-500'
+                    }`}
+                  />
+                  <span className="text-[13px] text-slate-400 font-medium group-hover:text-slate-500 transition-colors">Remember me for 30 days</span>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`w-full py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] text-white bg-gradient-to-r ${accent.gradient} ${accent.shadow} hover:shadow-lg`}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-[14px]">Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[14px]">Sign In</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {!isAdmin && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setShowForgotPassword(true)}
+                    className={`text-[13px] ${accent.text} font-semibold transition-all hover:opacity-80 active:scale-95`}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <p className={`text-center text-slate-300 text-[11px] font-medium mt-6 transition-all ${keyboardVisible ? 'hidden sm:block' : ''}`}>
-          © {new Date().getFullYear()} My Dairy • Secure Login
-        </p>
+          </section>
+        </main>
       </div>
 
-      {/* Keyframes */}
       <style>{`
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(12px); }
@@ -357,6 +404,10 @@ export default function LoginPage() {
           40% { transform: translateX(4px); }
           60% { transform: translateX(-3px); }
           80% { transform: translateX(2px); }
+        }
+        @keyframes slideUpSoft {
+          from { opacity: 0; transform: translateY(28px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
