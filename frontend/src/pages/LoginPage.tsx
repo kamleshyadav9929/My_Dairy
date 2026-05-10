@@ -186,8 +186,8 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 via-35% to-black/40" />
         <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_18%_0%,rgba(124,92,255,0.15),transparent_55%),radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.95),transparent_48%)]" />
 
-        <main className={`relative z-10 flex min-h-screen min-h-[100dvh] flex-col px-7 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(28px,env(safe-area-inset-top))] sm:min-h-0 sm:flex-1 ${keyboardVisible ? 'justify-start overflow-y-auto' : ''}`}>
-          <section className={`text-center transition-all duration-300 ${keyboardVisible && showLoginForm ? 'hidden' : ''}`}
+        <main className="relative z-10 flex min-h-screen min-h-[100dvh] flex-col px-7 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(28px,env(safe-area-inset-top))] sm:min-h-0 sm:flex-1">
+          <section className="text-center transition-all duration-300"
             style={{ animation: 'fadeSlideUp 0.45s cubic-bezier(0.16,1,0.3,1) both' }}>
             <button
               type="button"
@@ -214,34 +214,28 @@ export default function LoginPage() {
             </p>
           </section>
 
-          <div className={`pointer-events-none relative z-0 mt-auto flex-1 flex items-end justify-center transition-all duration-500 ${showLoginForm ? 'opacity-10 scale-95' : 'opacity-100 scale-100'} ${keyboardVisible ? 'hidden' : ''}`}>
+          <div className="pointer-events-none relative z-0 mt-auto flex-1 flex items-end justify-center transition-all duration-500">
             <img src="/Login_frontend.png" alt="" className="w-[125%] max-w-[520px] object-contain drop-shadow-2xl translate-y-[2%]" />
           </div>
 
-          {!showLoginForm && (
-            <section className="relative z-20 space-y-5 pb-5"
-              style={{ animation: 'fadeSlideUp 0.55s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '130ms' }}>
-              <button
-                type="button"
-                onClick={() => setShowLoginForm(true)}
-                className="flex h-16 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#8b4dff] to-[#6337f6] text-[1.35rem] font-bold text-white shadow-[0_8px_30px_rgba(139,77,255,0.4)] transition-all hover:shadow-[0_8px_30px_rgba(139,77,255,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
-              >
-                Get Started
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowLoginForm(true)}
-                className="mx-auto flex items-center justify-center gap-2.5 text-[1.15rem] font-bold text-white/95 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition-all hover:text-white hover:gap-3 active:scale-95"
-              >
-                Login to Account
-                <ArrowRight className="h-5 w-5" />
-              </button>
-            </section>
-          )}
+          <section className={`relative z-20 pb-5 transition-all duration-300 ${showLoginForm ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100 translate-y-0'}`}
+            style={{ animation: 'fadeSlideUp 0.55s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '130ms' }}>
+            <button
+              type="button"
+              onClick={() => setShowLoginForm(true)}
+              className="flex h-16 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#8b4dff] to-[#6337f6] text-[1.35rem] font-bold text-white shadow-[0_8px_30px_rgba(139,77,255,0.4)] transition-all hover:shadow-[0_8px_30px_rgba(139,77,255,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+            >
+              Get Started
+            </button>
+          </section>
 
-          <section className={`relative z-30 ${showLoginForm ? 'block' : 'hidden'} ${keyboardVisible ? 'mt-4' : 'mt-auto'}`}>
-            <div className="rounded-[1.6rem] border border-white/70 bg-white/92 p-5 shadow-2xl shadow-slate-950/20 backdrop-blur-xl"
-              style={{ animation: 'slideUpSoft 0.35s cubic-bezier(0.16,1,0.3,1) both' }}>
+          <div className={`absolute inset-0 z-50 overflow-y-auto transition-all duration-400 ${showLoginForm ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+            <div className="min-h-full flex flex-col justify-end p-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(28px,env(safe-area-inset-top))]">
+              <div 
+                className="fixed inset-0 bg-slate-900/15 backdrop-blur-[6px] transition-opacity duration-400" 
+                onClick={() => setShowLoginForm(false)} 
+              />
+              <div className={`relative z-10 w-full mt-auto rounded-[1.6rem] border border-white/70 bg-white/95 p-5 shadow-2xl shadow-slate-950/20 backdrop-blur-xl transition-all duration-500 ${showLoginForm ? 'translate-y-0 scale-100' : 'translate-y-8 scale-95'}`}>
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-violet-500">MyDairy</p>
@@ -378,7 +372,8 @@ export default function LoginPage() {
                 </div>
               )}
             </div>
-          </section>
+            </div>
+          </div>
         </main>
       </div>
 
