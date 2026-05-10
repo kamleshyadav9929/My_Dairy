@@ -183,8 +183,8 @@ export default function LoginPage() {
     <div className="min-h-screen min-h-[100dvh] bg-[#f8fbff] overflow-hidden">
       <div className="relative mx-auto flex min-h-screen min-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl shadow-slate-300/30 sm:my-6 sm:h-[calc(100dvh-3rem)] sm:min-h-[680px] sm:max-h-[920px] sm:rounded-[2rem]">
         <img src="/Login_backround.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/92 via-white/64 via-45% to-black/54" />
-        <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_18%_0%,rgba(124,92,255,0.22),transparent_55%),radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.95),transparent_48%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 via-35% to-black/40" />
+        <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_18%_0%,rgba(124,92,255,0.15),transparent_55%),radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.95),transparent_48%)]" />
 
         <main className={`relative z-10 flex min-h-screen min-h-[100dvh] flex-col px-7 pb-[max(24px,env(safe-area-inset-bottom))] pt-[max(28px,env(safe-area-inset-top))] sm:min-h-0 sm:flex-1 ${keyboardVisible ? 'justify-start overflow-y-auto' : ''}`}>
           <section className={`text-center transition-all duration-300 ${keyboardVisible && showLoginForm ? 'hidden' : ''}`}
@@ -192,7 +192,7 @@ export default function LoginPage() {
             <button
               type="button"
               aria-label="MyDairy"
-              className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-white/80 shadow-xl shadow-indigo-200/40 ring-1 ring-white/80 backdrop-blur transition-transform hover:scale-105 active:scale-95"
+              className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-white/90 shadow-2xl shadow-indigo-200/50 ring-4 ring-white/50 backdrop-blur-sm transition-transform hover:scale-105 active:scale-95"
               onClick={() => {
                 if (showAdminToggle) return;
                 const newCount = logoClickCount + 1;
@@ -206,46 +206,35 @@ export default function LoginPage() {
             >
               <img src="/logo.png" alt="" className="h-16 w-16 rounded-full object-contain" />
             </button>
-            <h1 className="font-heading text-[clamp(2.45rem,12vw,3.55rem)] font-extrabold leading-none tracking-normal text-[#07164a]">
+            <h1 className="font-heading text-[clamp(2.5rem,13vw,3.75rem)] font-extrabold leading-none tracking-tight text-[#07164a] drop-shadow-sm">
               My<span className="bg-gradient-to-r from-[#8752ff] to-[#5a39e6] bg-clip-text text-transparent">Dairy</span>
             </h1>
-            <p className="mt-3 text-[16px] font-semibold text-slate-500">Smart Dairy. Better Tomorrow.</p>
-          </section>
-
-          <section className={`relative z-10 mt-7 text-center transition-all duration-300 ${keyboardVisible && showLoginForm ? 'hidden' : ''}`}
-            style={{ animation: 'fadeSlideUp 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '80ms' }}>
-            <p className="font-heading text-[clamp(2rem,8vw,2.55rem)] font-bold leading-tight tracking-normal text-[#07164a]">Welcome to</p>
-            <h2 className="font-heading text-[clamp(2.85rem,14vw,4.25rem)] font-extrabold leading-none tracking-normal text-[#07164a]">
-              My<span className="bg-gradient-to-r from-[#8752ff] to-[#5a39e6] bg-clip-text text-transparent">Dairy</span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-[18rem] text-[clamp(1.1rem,4.7vw,1.32rem)] font-medium leading-relaxed text-slate-500">
+            <p className="mx-auto mt-4 max-w-[19rem] text-[clamp(1.1rem,4.5vw,1.25rem)] font-medium leading-relaxed text-slate-700/90 drop-shadow-sm">
               Track your milk collection, earnings and payments all in one place.
             </p>
           </section>
 
-          <div className={`pointer-events-none relative z-0 mt-auto min-h-[255px] overflow-hidden transition-all duration-300 sm:min-h-[220px] ${showLoginForm ? 'opacity-55' : 'opacity-100'} ${keyboardVisible ? 'hidden' : ''}`}>
-            <img src="/Login_frontend.png" alt="" className="absolute bottom-[-205px] left-1/2 w-[122%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl sm:bottom-[-245px]" />
+          <div className={`pointer-events-none relative z-0 mt-auto flex-1 flex items-end justify-center transition-all duration-500 ${showLoginForm ? 'opacity-10 scale-95' : 'opacity-100 scale-100'} ${keyboardVisible ? 'hidden' : ''}`}>
+            <img src="/Login_frontend.png" alt="" className="w-[125%] max-w-[520px] object-contain drop-shadow-2xl translate-y-[2%]" />
           </div>
 
           {!showLoginForm && (
-            <section className="relative z-20 space-y-5 pb-1"
+            <section className="relative z-20 space-y-5 pb-5"
               style={{ animation: 'fadeSlideUp 0.55s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '130ms' }}>
               <button
                 type="button"
                 onClick={() => setShowLoginForm(true)}
-                className="flex h-16 w-full items-center justify-center rounded-[1.65rem] bg-gradient-to-r from-[#8b4dff] to-[#6337f6] text-[1.45rem] font-extrabold text-white shadow-xl shadow-violet-900/30 transition active:scale-[0.98]"
+                className="flex h-16 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#8b4dff] to-[#6337f6] text-[1.35rem] font-bold text-white shadow-[0_8px_30px_rgba(139,77,255,0.4)] transition-all hover:shadow-[0_8px_30px_rgba(139,77,255,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
               >
                 Get Started
               </button>
               <button
                 type="button"
                 onClick={() => setShowLoginForm(true)}
-                className="mx-auto flex items-center justify-center gap-3 text-[1.28rem] font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition active:scale-95"
+                className="mx-auto flex items-center justify-center gap-2.5 text-[1.15rem] font-bold text-white/95 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition-all hover:text-white hover:gap-3 active:scale-95"
               >
                 Login to Account
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
-                  <ArrowRight className="h-5 w-5" />
-                </span>
+                <ArrowRight className="h-5 w-5" />
               </button>
             </section>
           )}
