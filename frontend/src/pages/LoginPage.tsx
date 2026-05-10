@@ -182,7 +182,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[#f8fbff] overflow-hidden">
       <div className="relative mx-auto flex min-h-screen min-h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl shadow-slate-300/30 sm:my-6 sm:h-[calc(100dvh-3rem)] sm:min-h-[680px] sm:max-h-[920px] sm:rounded-[2rem]">
-        <img src="/Login_backround.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src="/Login_backround.png" alt="" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover bg-[#e0f0ff]" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 via-35% to-black/40" />
         <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_18%_0%,rgba(124,92,255,0.15),transparent_55%),radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.95),transparent_48%)]" />
 
@@ -214,8 +214,8 @@ export default function LoginPage() {
             </p>
           </section>
 
-          <div className="pointer-events-none relative z-0 mt-auto flex-1 flex items-end justify-center transition-all duration-500">
-            <img src="/Login_frontend.png" alt="" className="w-[125%] max-w-[520px] object-contain drop-shadow-2xl translate-y-[2%]" />
+          <div className="pointer-events-none relative z-0 mt-auto flex-1 flex items-end justify-center transition-all duration-500 min-h-0">
+            <img src="/Login_frontend.png" alt="" fetchPriority="high" className="h-full w-[130%] max-w-[520px] object-contain object-bottom drop-shadow-2xl translate-y-[2%]" />
           </div>
 
           <section className={`relative z-20 pb-5 transition-all duration-300 ${showLoginForm ? 'opacity-0 pointer-events-none translate-y-4' : 'opacity-100 translate-y-0'}`}
